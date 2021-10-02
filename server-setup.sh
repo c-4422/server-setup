@@ -314,7 +314,10 @@ step_2() {
     echo "Enable basic security measures"
     for i in "${sysctlSecurity[@]}"
     do
-        sudo sysctl -w "$i"
+        parameter=$(sudo sysctl "$i")
+        if [[ "$parameter" != "$i" ]]; then
+            sudo /bin/su -c "echo '$i' >> /etc/sysctl.conf"
+        fi
     done
 
     printf "${GREEN}Completed Step 2\n\n${ENDCOLOR}"
@@ -356,7 +359,7 @@ step_4() {
     read -r -p "application passwords, y/n:" isPass
     if [[ "$isPass" =~ ^[Yy]$ ]]; then
         gpgKey=$(sudo -u "$varname" gpg --list-secret-keys --keyid-format LONG)
-        if [ -n "$gpgKey" ]; then
+        if [ "$gpgKey" == "" ]; then
             printf "${RED}When prompted for the following:\n${ENDCOLOR}"
             printf "${RED}    1. 'Your selection?' hit enter to select default\n${ENDCOLOR}"
             printf "${RED}    2. 'What key size do you want' hit enter to select default\n${ENDCOLOR}"
@@ -415,7 +418,7 @@ step_5() {
     else
         echo "Create update-backup-main.sh to run backup scripts"
         sudo -u "$varname" echo "" >> "$backupScriptLocation"
-        sudo -u "$varname" chmod +x "$backupScriptLocation"
+        sudo chmod +x "$backupScriptLocation"
     fi
 
     if [ -f "$updateServiceLocation" ]; then
