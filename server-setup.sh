@@ -7,7 +7,7 @@
 # 353b5bd8ab63aa7d4f15f462ef001d7b12f1abd6d32b9f9751ef7d9df9b3462a
 #
 # The purpose of this script is for ease of use when setting up
-# your own home or commercial server. Primary functions include:
+# your own home server. Primary functions include:
 # - Modify or create a user intended for running rootless podman
 #   containers
 # - Install needed software to run rootless podman along with
@@ -18,12 +18,17 @@
 # - Possibly set up pass password manager for management of
 #   contianer passwords
 # - Possibly add an alias lsper which lists la -al permission
-#   propert columns
+#   property columns
 #
 # server-setup script is set to fail if any commands
 # in the pipeline return a non zero this is done for
 # a few reasons. Modify the set options at your
 # own risk!
+#
+# LEGAL DISCLAIMER: This script is provided in the hope that it 
+# may be useful, but with no warranty, expressed or implied, 
+# and with no guarantee of support or future upgrades.
+#
 ###################################################################
 
 ###################################################################
