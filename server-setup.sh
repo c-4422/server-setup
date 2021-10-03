@@ -212,8 +212,10 @@ step_1() {
     echo "--------------------------------------------"
     echo "Step 1: Add selected user to sudo group,"
     echo "        install all necessary programs."
-    echo "        Configure folders for podman"
-    echo "        persistent storage"
+    echo "        Enable software services, verify"
+    echo "        sudo is enabled."
+    echo "        Modify kernel parameters for more"
+    echo "        security."
     echo "--------------------------------------------"
     sudo usermod -aG wheel "$varname"
     sudo dnf install epel-release -y
@@ -222,18 +224,47 @@ step_1() {
     echo "Enable cockpit service"
     sudo systemctl enable cockpit.socket
     sudo systemctl start cockpit.socket
-    echo "Set podman container application persistent storage"
-    echo "srv folder."
+
+    echo "Confirm wheel is in sudo group"
+    sudo sed -i 's/# %wheel  ALL=(ALL)       ALL/%wheel  ALL=(ALL)       ALL/' /etc/sudoers
+    echo "Enable fail2ban service"
+    sudo systemctl enable fail2ban
+    sudo systemctl start fail2ban
+
+    echo "Enable basic security measures"
+    for i in "${sysctlSecurity[@]}"
+    do
+        parameter=$(sudo sysctl "$i")
+        if [[ "$parameter" != "$i" ]]; then
+            sudo /bin/su -c "echo '$i' >> /etc/sysctl.conf"
+        fi
+    done
+
+    printf "${GREEN}Completed Step 1\n\n${ENDCOLOR}"
+}
+
+########################################
+# FUNCTION
+#   step_2()
+########################################
+step_2() {
+    echo "--------------------------------------------"
+    echo "Step 2: Configure folders for podman"
+    echo "        persistent storage"
+    echo "--------------------------------------------"
     
     # Set SRV_LOCATION user environment variable
-    srvLocation=$(sudo -u $varname echo "$SRV_LOCATION")
+    srvLocation=$(sudo -u $varname sed -n 's;^export SRV_LOCATION=\(.*\).*;\1;p' /home/$varname/.bashrc)
     if [[ $srvLocation != "" ]] ; then
         echo "User environment variable SRV_LOCATION already exists"
         isConfigured=true
     else
-        echo "SRV_LOCATION is not set, setting default srv location."
-        echo "Note that if you set a custom location it has to already"
-        echo "exist"
+        echo "---------------------------------------------------------------"
+        echo "SRV_LOCATION is not set, The default srv location is:"
+        echo "/srv/$varname"
+        printf "${RED}Note that if you set a custom srv location the folder you\n${ENDCOLOR}"
+        printf "${RED}specify should already exist\n${ENDCOLOR}"
+        echo "---------------------------------------------------------------"
         srvLocation="/srv/$varname"
         isConfigured=false
     fi
@@ -259,19 +290,28 @@ step_1() {
             sudo mkdir -p -- "/srv/$varname"
         fi
     fi
-    # sudo chown $varname:$varname $srvLocation
+    if [ "$(ls -A $srvLocation)" ]; then
+        printf "${RED}$srvLocation is not empty do not change ownership.\n${ENDCOLOR}"
+    else
+        sudo chown -R $varname:$varname $srvLocation
+        echo "$srvLocation ownership changed to $varname"
+    fi
 
     # Set STORAGE_LOCATION
-    storageLocation=$(sudo -u $varname echo "$STORAGE_LOCATION")
+    storageLocation=$(sudo -u $varname sed -n 's;^export STORAGE_LOCATION=\(.*\).*;\1;p' /home/$varname/.bashrc)
     if [[ $storageLocation != "" ]] ; then
         echo "User environment variable STORAGE_LOCATION already exists"
         isConfigured=true
     else
-        echo "STORAGE_LOCATION is not set, use default storage location?"
-        echo "Note that the default storage location will install on the"
-        echo "root of the OS drive. If you have a second hard drive you"
-        echo "would like to use for storage make sure it is mounted and"
-        echo "enter the absolute path to a folder that already exists."
+        echo "---------------------------------------------------------------"
+        echo "STORAGE_LOCATION is not set the default storage location is:"
+        echo "/storage/$varname"
+        printf "${RED}Note that the default storage location will install on the\n${ENDCOLOR}"
+        printf "${RED}root of the OS drive. If you have a second hard drive you\n${ENDCOLOR}"
+        printf "${RED}would like to use for storage make sure it is mounted and\n${ENDCOLOR}"
+        printf "${RED}enter the absolute path to the folder. Example:\n${ENDCOLOR}"
+        echo "/mnt/Second-Drive/$varname"
+        echo "---------------------------------------------------------------"
         storageLocation="/storage/$varname"
         isConfigured=false
     fi
@@ -297,33 +337,12 @@ step_1() {
             sudo mkdir -p -- "/storage/$varname"
         fi
     fi
-
-    printf "${GREEN}Completed Step 1\n\n${ENDCOLOR}"
-}
-
-########################################
-# FUNCTION
-#   step_2()
-########################################
-step_2() {
-    echo "--------------------------------------------"
-    echo "Step 2: Enable software services, verify"
-    echo "        sudo is enabled"
-    echo "--------------------------------------------"
-    echo "Confirm wheel is in sudo group"
-    sudo sed -i 's/# %wheel  ALL=(ALL)       ALL/%wheel  ALL=(ALL)       ALL/' /etc/sudoers
-    echo "Enable fail2ban service"
-    sudo systemctl enable fail2ban
-    sudo systemctl start fail2ban
-
-    echo "Enable basic security measures"
-    for i in "${sysctlSecurity[@]}"
-    do
-        parameter=$(sudo sysctl "$i")
-        if [[ "$parameter" != "$i" ]]; then
-            sudo /bin/su -c "echo '$i' >> /etc/sysctl.conf"
-        fi
-    done
+    if [ "$(ls -A $storageLocation)" ]; then
+        printf "${RED}$storageLocation is not empty do not change ownership.\n${ENDCOLOR}"
+    else
+        sudo chown -R $varname:$varname $storageLocation
+        echo "$storageLocation ownership changed to $varname"
+    fi
 
     printf "${GREEN}Completed Step 2\n\n${ENDCOLOR}"
 }
@@ -359,41 +378,48 @@ step_4() {
     echo "--------------------------------------------"
     echo "Step 4: Configure pass password manager"
     echo "--------------------------------------------"
-    echo "Configure pass? A basic password manager"
-    echo "extremely useful for managing server"
-    read -r -p "application passwords, y/n:" isPass
-    if [[ "$isPass" =~ ^[Yy]$ ]]; then
-        gpgKey=$(sudo -u "$varname" gpg --list-secret-keys --keyid-format LONG)
-        if [ "$gpgKey" == "" ]; then
-            printf "${RED}When prompted for the following:\n${ENDCOLOR}"
-            printf "${RED}    1. 'Your selection?' hit enter to select default\n${ENDCOLOR}"
-            printf "${RED}    2. 'What key size do you want' hit enter to select default\n${ENDCOLOR}"
-            printf "${RED}    3. 'Key is valid for? (0)' hit enter to select default\n${ENDCOLOR}"
-            printf "${RED}It will then ask you if this is correct enter y\n${ENDCOLOR}"
-            printf "${RED}You will then be prompted to enter your name and password\n${ENDCOLOR}"
-            printf "${RED}Password can be whatever you want make it something somewhat easy to type\n${ENDCOLOR}"
-            read -n 1 -s -r -p "Press any key to continue to GPG password creation:"
-            sudo -u "$varname" gpg --full-generate-key
-            gpgKey=$(sudo -u "$varname" gpg --list-secret-keys --keyid-format LONG)
-        fi
-        sudo -u "$varname" gpg --list-secret-keys --keyid-format LONG
-        gpgKey=$(printf "%.21s" "${gpgKey#*rsa}")
-        gpgKey=$(printf "%.16s" "${gpgKey#*\/}")
-        read -r -p "Is the following key correct: $gpgKey: y/n:" isCorrect
-        if [[ "$isCorrect" =~ ^[Nn]$ ]]; then
-            gpgKey=""
-        fi
-        while sudo -u "$varname" ! pass init "$gpgKey" ; do
-            echo "Key ID incorrect enter correct key"
-            sudo -u "$varname" gpg --list-secret-keys --keyid-format LONG
-            read -r -p "KeyID = " gpgKey 
-        done
+    currentUser=$(whoami)
+    if [[ "$currentUser" != "$varname" ]]; then
+        printf "${RED}You need to be logged in as $varname\n${ENDCOLOR}"
+        printf "${RED}in order to configure pass.\n${ENDCOLOR}"
+        printf "${RED}Skipping Step 4\n\n${ENDCOLOR}"
     else
-        echo "Skipping pass configuration, you can always"
-        echo "set this up later using gpg and pass init"
-    fi
+        echo "Configure pass? A basic password manager"
+        echo "extremely useful for managing server"
+        read -r -p "application passwords, y/n:" isPass
+        if [[ "$isPass" =~ ^[Yy]$ ]]; then
+            gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
+            if [ "$gpgKey" == "" ]; then
+                printf "${RED}When prompted for the following:\n${ENDCOLOR}"
+                printf "${RED}    1. 'Your selection?' hit enter to select default\n${ENDCOLOR}"
+                printf "${RED}    2. 'What key size do you want' hit enter to select default\n${ENDCOLOR}"
+                printf "${RED}    3. 'Key is valid for? (0)' hit enter to select default\n${ENDCOLOR}"
+                printf "${RED}It will then ask you if this is correct enter y\n${ENDCOLOR}"
+                printf "${RED}You will then be prompted to enter your name and password.\n${ENDCOLOR}"
+                printf "${RED}I advise you make the password something easy to type.\n${ENDCOLOR}"
+                read -n 1 -s -r -p "Press any key to continue to GPG password creation:"
+                gpg --full-generate-key
+                gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
+            fi
+            gpg --list-secret-keys --keyid-format LONG
+            gpgKey=$(printf "%.21s" "${gpgKey#*rsa}")
+            gpgKey=$(printf "%.16s" "${gpgKey#*\/}")
+            read -r -p "Is the following key correct: $gpgKey: y/n:" isCorrect
+            if [[ "$isCorrect" =~ ^[Nn]$ ]]; then
+                gpgKey=""
+            fi
+            while ! pass init "$gpgKey" ; do
+                echo "Key ID incorrect enter correct key"
+                gpg --list-secret-keys --keyid-format LONG
+                read -r -p "KeyID = " gpgKey 
+            done
+        else
+            echo "Skipping pass configuration, you can always"
+            echo "set this up later using gpg and pass init"
+        fi
 
-    printf "${GREEN}Completed Step 4\n\n${ENDCOLOR}"
+        printf "${GREEN}Completed Step 4\n\n${ENDCOLOR}"
+    fi
 }
 
 ########################################
@@ -516,12 +542,65 @@ echo "============================================"
 
 print_logo
 select_user
-step_1
-step_2
-step_3
-step_4
-step_5
-step_6
+
+# printf '%s:\tport: %s\n' "$(DATABASE)" "$(DATABASE_PORT)" | expand -t 20
+echo "============================================================"
+echo "The following steps are available"
+echo "============================================================"
+echo "--------------------------------------------"
+echo "     1: Add selected user to sudo group,"
+echo "        install all necessary programs."
+echo "        Enable software services, verify"
+echo "        sudo is enabled."
+echo "        Modify kernel parameters for more"
+echo "        security."
+echo "--------------------------------------------"
+echo "     2: Configure folders for podman"
+echo "        persistent storage"
+echo "--------------------------------------------"
+echo "     3: Configure systemd user settings,"
+echo "        configure podman to use fuse-fs."
+echo "--------------------------------------------"
+echo "[OPTIONAL]"
+echo "     4: Configure pass password manager"
+echo "--------------------------------------------"
+echo "     5: Configure automatic updates and"
+echo "        backup service."
+echo "--------------------------------------------"
+echo "[OPTIONAL]"
+echo "     6: Add lsper alias to .bashrc"
+echo "--------------------------------------------"
+read -r -p "Select the step you wish to execute (1-6, Default All=A):" stepSelect
+
+case "$stepSelect" in
+    "1")
+        step_1
+        ;;
+    "2")
+        step_2
+        ;;
+    "3")
+        step_3
+        ;;
+    "4")
+        step_4
+        ;;
+    "5")
+        step_5
+        ;;
+    "6")
+        step_6
+        ;;
+    *)
+        # Default
+        step_1
+        step_2
+        step_3
+        step_4
+        step_5
+        step_6
+        ;;
+esac
 
 printf "${GREEN}Setup completed succesfully!\n${ENDCOLOR}"
 read -r -p "Reboot required. Reboot now? y/n:" isReboot
