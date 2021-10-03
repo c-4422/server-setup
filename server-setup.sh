@@ -69,11 +69,13 @@ autoUpdateBackupScript="#!/bin/bash
 ################################################
 set -eo pipefail
 count=0
-for f in ~/backups/scripts/*.sh; do
-    let \"count+=1\"
-    echo \"Step \$counter. Entering script \$f\"
-	bash \"\$f\"
-done
+if [ \"\$(ls -A ~/backups/scripts)\" ]; then
+    for f in ~/backups/scripts/*.sh; do
+        let \"count+=1\"
+        echo \"Step \$count. Entering script \$f\"
+        bash \"\$f\"
+    done
+fi
 podman auto-update"
 
 lsPerCommand="-rw-r--r-- 12 linuxize users 12.0K Apr  28 10:10 file_name
@@ -232,6 +234,7 @@ step_1() {
     sudo systemctl start fail2ban
 
     echo "Enable basic security measures"
+    # TODO: There is a bug here where it will write to /etc/sysctl.conf multiple times
     for i in "${sysctlSecurity[@]}"
     do
         parameter=$(sudo sysctl "$i")
@@ -448,8 +451,9 @@ step_5() {
         echo "======"
     else
         echo "Create update-backup-main.sh to run backup scripts"
-        sudo -u "$varname" echo "" >> "$backupScriptLocation"
+        sudo -u "$varname" echo "$autoUpdateBackupScript" >> "$backupScriptLocation"
         sudo chmod +x "$backupScriptLocation"
+        sudo chown $varname:$varname $backupScriptLocation
     fi
 
     if [ -f "$updateServiceLocation" ]; then
