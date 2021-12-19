@@ -12,7 +12,8 @@
 #   containers
 # - Install needed software to run rootless podman along with
 #   other software intended for ease of use like cockpit.
-# - Set kernel parmaters for more security
+# - Set kernel parmaters for rootless and possibly additional 
+#   security
 # - Set up podman to use fuse-fs for rootless containers
 # - Set up locations for container persistent storage
 # - Possibly set up pass password manager for management of
@@ -39,20 +40,6 @@ varname="null"
 RED="\\033[0;31m"
 GREEN="\\033[0;32m"
 ENDCOLOR="\\x1b[0m"
-
-sysctlFile="/etc/sysctl.conf"
-
-sysctlSecurity=(
-"net.ipv4.ip_unprivileged_port_start=80"
-"net.ipv4.conf.default.rp_filter=1"
-"net.ipv4.conf.all.rp_filter=1"
-"net.ipv4.conf.all.accept_redirects=0"
-"net.ipv6.conf.all.accept_redirects=0"
-"net.ipv4.conf.all.send_redirects=0"
-"net.ipv4.conf.all.accept_source_route=0"
-"net.ipv6.conf.all.accept_source_route=0"
-"net.ipv4.conf.all.log_martians=1"
-"net.ipv4.conf.all.arp_notify=1")
 
 autoUpdateBackupScript="#!/bin/bash
 ################################################
@@ -216,8 +203,7 @@ step_1() {
     echo "        install all necessary programs."
     echo "        Enable software services, verify"
     echo "        sudo is enabled."
-    echo "        Modify kernel parameters for more"
-    echo "        security."
+    echo "        Enable cockpit and Fail2ban."
     echo "--------------------------------------------"
     sudo usermod -aG wheel "$varname"
     sudo dnf install epel-release -y
@@ -233,16 +219,6 @@ step_1() {
     sudo systemctl enable fail2ban
     sudo systemctl start fail2ban
 
-    echo "Enable basic security measures"
-    # TODO: There is a bug here where it will write to /etc/sysctl.conf multiple times
-    for i in "${sysctlSecurity[@]}"
-    do
-        parameter=$(sudo sysctl "$i")
-        if [[ "$parameter" != "$i" ]]; then
-            sudo /bin/su -c "echo '$i' >> /etc/sysctl.conf"
-        fi
-    done
-
     printf "${GREEN}Completed Step 1\n\n${ENDCOLOR}"
 }
 
@@ -252,7 +228,143 @@ step_1() {
 ########################################
 step_2() {
     echo "--------------------------------------------"
-    echo "Step 2: Configure folders for podman"
+    echo "     2: Modify kernel parameters so that"
+    echo "        port 80 is usable with rootless"
+    echo "        podman."
+    echo "        Enable / Disable additional kernel"
+    echo "        parameters for added security."
+    echo "--------------------------------------------"
+
+    numEnabledSecurityParams=0
+
+    sysParams="/etc/sysctl.d/c-4422_server_kernel_parameters.conf"
+
+    sysctlSecurity=(
+"net.ipv4.conf.default.rp_filter" "1"
+"net.ipv4.conf.all.rp_filter" "1"
+"net.ipv4.conf.all.accept_redirects" "0"
+"net.ipv6.conf.all.accept_redirects" "0"
+"net.ipv4.conf.all.send_redirects" "0"
+"net.ipv4.conf.all.accept_source_route" "0"
+"net.ipv6.conf.all.accept_source_route" "0"
+"net.ipv4.conf.all.log_martians" "1"
+"net.ipv4.conf.all.arp_notify" "1")
+
+    basicKernelParam="################################################
+# Server Kernel Parameter File
+# 
+# by C-4422
+#
+# Basic kernel parameters for rootless podman
+# and security if enabled. Parameters used for
+# security, specifically preventing man in the 
+# middle attacks, can potentially mess with 
+# networking tasks e.g. if you plan on using 
+# your server for network routing. Hopefully 
+# you won't need to edit this file yourself.
+#
+# auto-generated from server-setup.sh
+################################################
+
+# Unprivileged port start at 80 is necessary for 
+# rootless podman this parameter shouldn't be changed
+net.ipv4.ip_unprivileged_port_start=80
+
+# The following parameters are meant for added security
+# and can be commented out if needed
+
+# Uncomment the next two lines to enable Spoof protection (reverse-path filter)
+# Turn on Source Address Verification in all interfaces to
+# prevent some spoofing attacks
+#net.ipv4.conf.default.rp_filter=1
+#net.ipv4.conf.all.rp_filter=1
+
+# Do not accept ICMP redirects (prevent MITM attacks)
+#net.ipv4.conf.all.accept_redirects=0
+#net.ipv6.conf.all.accept_redirects=0
+
+# Do not send ICMP redirects (we are not a router)
+#net.ipv4.conf.all.send_redirects=0
+
+# Do not accept IP source route packets (we are not a router)
+#net.ipv4.conf.all.accept_source_route=0
+#net.ipv6.conf.all.accept_source_route=0
+
+# Log Martian Packets
+#net.ipv4.conf.all.log_martians=1
+
+# Send gratitous ARP when device change
+#net.ipv4.conf.all.arp_notify=1"
+
+    if [ -f $sysParams ]; then
+        echo "$sysParams file exists."
+    else
+        echo "Create $sysParams"
+        echo "Set unprivileged port start to 80"
+        sudo /bin/su -c "echo '$basicKernelParam' >> $sysParams"
+    fi
+    
+    for (( i=0; i<${#sysctlSecurity[@]}; i=i+2 ))
+    do
+        if grep -q "^${sysctlSecurity[$i]}=${sysctlSecurity[$i+1]}" $sysParams; then
+            numEnabledSecurityParams=$(($numEnabledSecurityParams+1))
+        fi
+    done
+
+    securityStatus="disabled"
+    # Check to see if number of enabled security parameters equals the
+    # total number of stored security parameters
+    totalSecurityParams=$((${#sysctlSecurity[@]}/2))
+
+    if [[ $numEnabledSecurityParams -eq $totalSecurityParams ]]; then
+        securityStatus="enabled"
+    elif [[ $numEnabledSecurityParams -gt 0 ]]; then
+        securityStatus="partially enabled"
+    fi
+
+    printf "\n"
+    echo "Currently additional security measures are $securityStatus."
+    echo "Additional security is used for mitigating / preventing"
+    echo "man in the middle network attacks. These security measures"
+    echo "are not strictly required."
+    printf "${RED}NOTE: If you plan on running Pi-hole or a DNS server do\n${ENDCOLOR}"
+    printf "${RED}      not enable additional security parameters, it will\n${ENDCOLOR}"
+    printf "${RED}      cause said applications to not work.\n${ENDCOLOR}"
+    printf "Select to enable disable or leave as is (Current status: ${RED}$securityStatus${ENDCOLOR})\n"
+    read -r -p " [Enable=e, Disable=d, default (leave as is)=l]:" selection
+
+    case "$selection" in
+    "e")
+        for (( i=0; i<${#sysctlSecurity[@]}; i=i+2 ))
+        do
+            if grep -q ${sysctlSecurity[$i]} $sysParams; then
+                # Look for security parameters and enable them
+                sudo /bin/su -c "sed -i '/${sysctlSecurity[$i]}/c\\${sysctlSecurity[$i]}=${sysctlSecurity[$i+1]}' $sysParams"
+            else
+                sudo /bin/su -c "echo '${sysctlSecurity[$i]}=${sysctlSecurity[$i+1]}' >> $sysParams"
+            fi
+        done
+        ;;
+    "d")
+        for (( i=0; i<${#sysctlSecurity[@]}; i=i+2 ))
+        do
+            sudo /bin/su -c "sed -i '/${sysctlSecurity[$i]}/c\\#${sysctlSecurity[$i]}=${sysctlSecurity[$i+1]}' $sysParams"
+        done
+        ;;
+    *)
+        ;;
+    esac
+
+    printf "${GREEN}Completed Step 1\n\n${ENDCOLOR}"
+}
+
+########################################
+# FUNCTION
+#   step_3()
+########################################
+step_3() {
+    echo "--------------------------------------------"
+    echo "Step 3: Configure folders for podman"
     echo "        persistent storage"
     echo "--------------------------------------------"
     
@@ -347,16 +459,16 @@ step_2() {
         echo "$storageLocation ownership changed to $varname"
     fi
 
-    printf "${GREEN}Completed Step 2\n\n${ENDCOLOR}"
+    printf "${GREEN}Completed Step 3\n\n${ENDCOLOR}"
 }
 
 ########################################
 # FUNCTION
-#   step_3()
+#   step_4()
 ########################################
-step_3() {
+step_4() {
     echo "--------------------------------------------"
-    echo "Step 3: Configure systemd user settings,"
+    echo "Step 4: Configure systemd user settings,"
     echo "        configure podman to use fuse-fs."
     echo "--------------------------------------------"
     echo "Configure $varname user systemd folder"
@@ -370,16 +482,16 @@ step_3() {
     echo "Enable fuse-overlay file system fo use with rootless podman"
     sudo sed -i 's/#mount_program = "\/usr\/bin\/fuse-overlayfs"/mount_program = "\/usr\/bin\/fuse-overlayfs"/' /etc/containers/storage.conf
 
-    printf "${GREEN}Completed Step 3\n\n${ENDCOLOR}"
+    printf "${GREEN}Completed Step 4\n\n${ENDCOLOR}"
 }
 
 ########################################
 # FUNCTION
 #   step_4()
 ########################################
-step_4() {
+step_5() {
     echo "--------------------------------------------"
-    echo "Step 4: Configure pass password manager"
+    echo "Step 5: Configure pass password manager"
     echo "--------------------------------------------"
     currentUser=$(whoami)
     if [[ "$currentUser" != "$varname" ]]; then
@@ -421,17 +533,17 @@ step_4() {
             echo "set this up later using gpg and pass init"
         fi
 
-        printf "${GREEN}Completed Step 4\n\n${ENDCOLOR}"
+        printf "${GREEN}Completed Step 5\n\n${ENDCOLOR}"
     fi
 }
 
 ########################################
 # FUNCTION
-#   step_5()
+#   step_6()
 ########################################
-step_5() {
+step_6() {
     echo "--------------------------------------------"
-    echo "Step 5: Configure automatic updates and"
+    echo "Step 6: Configure automatic updates and"
     echo "        backup service."
     echo "--------------------------------------------"
     echo "Configure folder structure for automatic"
@@ -496,16 +608,16 @@ WantedBy=multi-user.target"
         echo "Create container-update.timer for systemD"
         sudo -u "$varname" echo "$timerD" >> "$updateTimerLocation"
     fi
-    printf "${GREEN}Completed step 5\n${ENDCOLOR}"
+    printf "${GREEN}Completed step 6\n${ENDCOLOR}"
 }
 
 ########################################
 # FUNCTION
-#   step_6()
+#   step_7()
 ########################################
-step_6() {
+step_7() {
     echo "--------------------------------------------"
-    echo "Step 6: Add lsper alias to .bashrc"
+    echo "Step 7: Add lsper alias to .bashrc"
     echo "--------------------------------------------"
     echo "Adding command lsper to .bashrc, this is not"
     echo "crucial to system function. lsper stands for"
@@ -528,7 +640,7 @@ step_6() {
             fi
         done
         echo "Successfully installed lsper alias"
-        printf "${GREEN}Completed step 6\n${ENDCOLOR}"
+        printf "${GREEN}Completed step 7\n${ENDCOLOR}"
     else
         echo "Skipping lsper alias"
     fi
@@ -556,23 +668,28 @@ echo "     1: Add selected user to sudo group,"
 echo "        install all necessary programs."
 echo "        Enable software services, verify"
 echo "        sudo is enabled."
-echo "        Modify kernel parameters for more"
-echo "        security."
+echo "        Enable cockpit and Fail2ban."
 echo "--------------------------------------------"
-echo "     2: Configure folders for podman"
+echo "     2: Modify kernel parameters so that"
+echo "        port 80 is usable with rootless"
+echo "        podman."
+echo "        Enable / Disable additional kernel"
+echo "        parameters for added security."
+echo "--------------------------------------------"
+echo "     3: Configure folders for podman"
 echo "        persistent storage"
 echo "--------------------------------------------"
-echo "     3: Configure systemd user settings,"
+echo "     4: Configure systemd user settings,"
 echo "        configure podman to use fuse-fs."
 echo "--------------------------------------------"
 echo "[OPTIONAL]"
-echo "     4: Configure pass password manager"
+echo "     5: Configure pass password manager"
 echo "--------------------------------------------"
-echo "     5: Configure automatic updates and"
+echo "     6: Configure automatic updates and"
 echo "        backup service."
 echo "--------------------------------------------"
 echo "[OPTIONAL]"
-echo "     6: Add lsper alias to .bashrc"
+echo "     7: Add lsper alias to .bashrc"
 echo "--------------------------------------------"
 read -r -p "Select the step you wish to execute (1-6, Default All=A):" stepSelect
 
@@ -595,6 +712,9 @@ case "$stepSelect" in
     "6")
         step_6
         ;;
+    "7")
+        step_7
+        ;;
     *)
         # Default
         step_1
@@ -603,6 +723,7 @@ case "$stepSelect" in
         step_4
         step_5
         step_6
+        step_7
         ;;
 esac
 
