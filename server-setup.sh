@@ -121,37 +121,37 @@ print_logo() {
         case "$i" in
             "oooo")
                 # Transparent
-                printf "  "
+                echo -en "  "
                 ;;
             "!!!!")
                 # Black
-                printf "\x1b[38;2;0;0;0m██\x1b[0m"
+                echo -en "\x1b[38;2;0;0;0m██\x1b[0m"
                 ;;
             "6TIM")
                 # Dark Brown
-                printf "\x1b[38;2;87;58;44m██\x1b[0m"
+                echo -en "\x1b[38;2;87;58;44m██\x1b[0m"
                 ;;
             "GGJ3")
                 # Brown
-                printf "\x1b[38;2;154;106;82m██\x1b[0m"
+                echo -en "\x1b[38;2;154;106;82m██\x1b[0m"
                 ;;
             "04=V")
                 # Gray
-                printf "\x1b[38;2;61;55;53m██\x1b[0m"
+                echo -en "\x1b[38;2;61;55;53m██\x1b[0m"
                 ;;
             "````")
                 # White
-                printf "\x1b[38;2;255;255;255m██\x1b[0m"
+                echo -en "\x1b[38;2;255;255;255m██\x1b[0m"
                 ;;
             "X[K0")
                 # Light Brown
-                printf "\x1b[38;2;233;170;143m██\x1b[0m"
+                echo -en "\x1b[38;2;233;170;143m██\x1b[0m"
                 ;;
         esac
         let "count+=1"
         if (( $count % 30 == 0 ))
         then
-            printf "\n"
+            echo -en "\n"
         fi
     done
     # End of unimportant pixel art routine
@@ -170,9 +170,9 @@ select_user() {
         echo "The user $varname will be configured"
         read -r -p "for rootless podman. Is this correct? y/n: " isContinue
         if [[ "$isContinue" =~ ^[Yy]$ ]]; then
-            printf "${GREEN}Beginning set up.\n${ENDCOLOR}"
+            echo -e "${GREEN}Beginning set up.${ENDCOLOR}"
         else
-            printf "${RED}Exiting script\n${ENDCOLOR}"
+            echo -e "${RED}Exiting script${ENDCOLOR}"
             exit 1
         fi
     else
@@ -183,10 +183,10 @@ select_user() {
             echo "Creating user $varname"
             sudo useradd "$varname"
             sudo passwd "$varname"
-            printf "${GREEN}Beginning set up.\n${ENDCOLOR}"
+            echo -e "${GREEN}Beginning set up.${ENDCOLOR}"
         else
-            printf "${RED}Exiting script, rerun script with a valid username\n${ENDCOLOR}"
-            printf "${RED}to continue\n${ENDCOLOR}"
+            echo -e "${RED}Exiting script, rerun script with a valid username${ENDCOLOR}"
+            echo -e "${RED}to continue${ENDCOLOR}"
             exit 1
         fi
     fi
@@ -219,7 +219,7 @@ step_1() {
     sudo systemctl enable fail2ban
     sudo systemctl start fail2ban
 
-    printf "${GREEN}Completed Step 1\n\n${ENDCOLOR}"
+    echo -en "${GREEN}Completed Step 1\n\n${ENDCOLOR}"
 }
 
 ########################################
@@ -322,15 +322,15 @@ net.ipv4.ip_unprivileged_port_start=80
         securityStatus="partially enabled"
     fi
 
-    printf "\n"
+    echo -n "\n"
     echo "Currently additional security measures are $securityStatus."
     echo "Additional security is used for mitigating / preventing"
     echo "man in the middle network attacks. These security measures"
     echo "are not strictly required."
-    printf "${RED}NOTE: If you plan on running Pi-hole or a DNS server do\n${ENDCOLOR}"
-    printf "${RED}      not enable additional security parameters, it will\n${ENDCOLOR}"
-    printf "${RED}      cause said applications to not work.\n${ENDCOLOR}"
-    printf "Select to enable disable or leave as is (Current status: ${RED}$securityStatus${ENDCOLOR})\n"
+    echo -e "${RED}NOTE: If you plan on running Pi-hole or a DNS server do${ENDCOLOR}"
+    echo -e "${RED}      not enable additional security parameters, it will${ENDCOLOR}"
+    echo -e "${RED}      cause said applications to not work.${ENDCOLOR}"
+    echo -e "Select to enable disable or leave as is (Current status: ${RED}$securityStatus${ENDCOLOR})"
     read -r -p " [Enable=e, Disable=d, default (leave as is)=l]:" selection
 
     case "$selection" in
@@ -355,7 +355,7 @@ net.ipv4.ip_unprivileged_port_start=80
         ;;
     esac
 
-    printf "${GREEN}Completed Step 1\n\n${ENDCOLOR}"
+    echo -en "${GREEN}Completed Step 1\n\n${ENDCOLOR}"
 }
 
 ########################################
@@ -377,8 +377,8 @@ step_3() {
         echo "---------------------------------------------------------------"
         echo "SRV_LOCATION is not set, The default srv location is:"
         echo "/srv/$varname"
-        printf "${RED}Note that if you set a custom srv location the folder you\n${ENDCOLOR}"
-        printf "${RED}specify should already exist\n${ENDCOLOR}"
+        echo -e "${RED}Note that if you set a custom srv location the folder you${ENDCOLOR}"
+        echo -e "${RED}specify should already exist${ENDCOLOR}"
         echo "---------------------------------------------------------------"
         srvLocation="/srv/$varname"
         isConfigured=false
@@ -393,11 +393,11 @@ step_3() {
     done
 
     if [ "$SRV_LOCATION" != "$srvLocation" ] && $isConfigured; then
-        sudo -u $varname sed -i 's;^export SRV_LOCATION=.*;export SRV_LOCATION='"$srvLocation"';' /home/$varname/.bashrc
+        sudo -u "$varname" sed -i 's;^export SRV_LOCATION=.*;export SRV_LOCATION='"$srvLocation"';' /home/"$varname"/.bashrc
         echo "Change SRV_LOCATION to $srvLocation"
     elif [[ $isConfigured = false ]]; then
         echo "set SRV_LOCTION to $srvLocation"
-        sudo -u $varname echo "export SRV_LOCATION=$srvLocation" >> /home/$varname/.bashrc
+        sudo -u "$varname" echo "export SRV_LOCATION=$srvLocation" >> /home/$varname/.bashrc
         echo "SRV_LOCTION set to $srvLocation"
         if [[ "$srvLocation" == "/srv/$varname" ]]; then
             echo "Make /srv/$varname directory"
@@ -406,14 +406,14 @@ step_3() {
         fi
     fi
     if [ "$(ls -A $srvLocation)" ]; then
-        printf "${RED}$srvLocation is not empty do not change ownership.\n${ENDCOLOR}"
+        echo -e "${RED}$srvLocation is not empty do not change ownership.${ENDCOLOR}"
     else
-        sudo chown -R $varname:$varname $srvLocation
+        sudo chown -R "$varname:$varname" "$srvLocation"
         echo "$srvLocation ownership changed to $varname"
     fi
 
     # Set STORAGE_LOCATION
-    storageLocation=$(sudo -u $varname sed -n 's;^export STORAGE_LOCATION=\(.*\).*;\1;p' /home/$varname/.bashrc)
+    storageLocation=$(sudo -u "$varname" sed -n 's;^export STORAGE_LOCATION=\(.*\).*;\1;p' /home/"$varname"/.bashrc)
     if [[ $storageLocation != "" ]] ; then
         echo "User environment variable STORAGE_LOCATION already exists"
         isConfigured=true
@@ -421,10 +421,10 @@ step_3() {
         echo "---------------------------------------------------------------"
         echo "STORAGE_LOCATION is not set the default storage location is:"
         echo "/storage/$varname"
-        printf "${RED}Note that the default storage location will install on the\n${ENDCOLOR}"
-        printf "${RED}root of the OS drive. If you have a second hard drive you\n${ENDCOLOR}"
-        printf "${RED}would like to use for storage make sure it is mounted and\n${ENDCOLOR}"
-        printf "${RED}enter the absolute path to the folder. Example:\n${ENDCOLOR}"
+        echo -e "${RED}Note that the default storage location will install on the${ENDCOLOR}"
+        echo -e "${RED}root of the OS drive. If you have a second hard drive you${ENDCOLOR}"
+        echo -e "${RED}would like to use for storage make sure it is mounted and${ENDCOLOR}"
+        echo -e "${RED}enter the absolute path to the folder. Example:${ENDCOLOR}"
         echo "/mnt/Second-Drive/$varname"
         echo "---------------------------------------------------------------"
         storageLocation="/storage/$varname"
@@ -440,11 +440,11 @@ step_3() {
     done
 
     if [ "$STORAGE_LOCATION" != "$storageLocation" ] && $isConfigured; then
-        sudo -u $varname sed -i 's;^export STORAGE_LOCATION=.*;export STORAGE_LOCATION='"$storageLocation"';' /home/$varname/.bashrc
+        sudo -u "$varname" sed -i 's;^export STORAGE_LOCATION=.*;export STORAGE_LOCATION='"$storageLocation"';' /home/"$varname"/.bashrc
         echo "Change STORAGE_LOCATION to $storageLocation"
     elif [[ $isConfigured = false ]]; then
         echo "set STORAGE_LOCATION to $storageLocation"
-        sudo -u $varname echo "export STORAGE_LOCATION=$storageLocation" >> /home/$varname/.bashrc
+        sudo -u "$varname" echo "export STORAGE_LOCATION=$storageLocation" >> /home/"$varname"/.bashrc
         echo "STORAGE_LOCATION set to $storageLocation"
         if [[ "$storageLocation" == "/storage/$varname" ]]; then
             echo "Make /storage/$varname directory"
@@ -452,14 +452,14 @@ step_3() {
             sudo mkdir -p -- "/storage/$varname"
         fi
     fi
-    if [ "$(ls -A $storageLocation)" ]; then
-        printf "${RED}$storageLocation is not empty do not change ownership.\n${ENDCOLOR}"
+    if [ "$(ls -A "$storageLocation")" ]; then
+        echo -en "${RED}$storageLocation is not empty do not change ownership.\n${ENDCOLOR}"
     else
-        sudo chown -R $varname:$varname $storageLocation
+        sudo chown -R "$varname:$varname" "$storageLocation"
         echo "$storageLocation ownership changed to $varname"
     fi
 
-    printf "${GREEN}Completed Step 3\n\n${ENDCOLOR}"
+    echo -en "${GREEN}Completed Step 3\n\n${ENDCOLOR}"
 }
 
 ########################################
@@ -482,7 +482,7 @@ step_4() {
     echo "Enable fuse-overlay file system fo use with rootless podman"
     sudo sed -i 's/#mount_program = "\/usr\/bin\/fuse-overlayfs"/mount_program = "\/usr\/bin\/fuse-overlayfs"/' /etc/containers/storage.conf
 
-    printf "${GREEN}Completed Step 4\n\n${ENDCOLOR}"
+    echo -en "${GREEN}Completed Step 4\n\n${ENDCOLOR}"
 }
 
 ########################################
@@ -495,9 +495,9 @@ step_5() {
     echo "--------------------------------------------"
     currentUser=$(whoami)
     if [[ "$currentUser" != "$varname" ]]; then
-        printf "${RED}You need to be logged in as $varname\n${ENDCOLOR}"
-        printf "${RED}in order to configure pass.\n${ENDCOLOR}"
-        printf "${RED}Skipping Step 4\n\n${ENDCOLOR}"
+        echo -en "${RED}You need to be logged in as $varname\n${ENDCOLOR}"
+        echo -en "${RED}in order to configure pass.\n${ENDCOLOR}"
+        echo -en "${RED}Skipping Step 4\n\n${ENDCOLOR}"
     else
         echo "Configure pass? A basic password manager"
         echo "extremely useful for managing server"
@@ -505,20 +505,20 @@ step_5() {
         if [[ "$isPass" =~ ^[Yy]$ ]]; then
             gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
             if [ "$gpgKey" == "" ]; then
-                printf "${RED}When prompted for the following:\n${ENDCOLOR}"
-                printf "${RED}    1. 'Your selection?' hit enter to select default\n${ENDCOLOR}"
-                printf "${RED}    2. 'What key size do you want' hit enter to select default\n${ENDCOLOR}"
-                printf "${RED}    3. 'Key is valid for? (0)' hit enter to select default\n${ENDCOLOR}"
-                printf "${RED}It will then ask you if this is correct enter y\n${ENDCOLOR}"
-                printf "${RED}You will then be prompted to enter your name and password.\n${ENDCOLOR}"
-                printf "${RED}I advise you make the password something easy to type.\n${ENDCOLOR}"
+                echo -e "${RED}When prompted for the following:${ENDCOLOR}"
+                echo -e "${RED}    1. 'Your selection?' hit enter to select default${ENDCOLOR}"
+                echo -e "${RED}    2. 'What key size do you want' hit enter to select default${ENDCOLOR}"
+                echo -e "${RED}    3. 'Key is valid for? (0)' hit enter to select default${ENDCOLOR}"
+                echo -e "${RED}It will then ask you if this is correct enter y${ENDCOLOR}"
+                echo -e "${RED}You will then be prompted to enter your name and password.${ENDCOLOR}"
+                echo -e "${RED}I advise you make the password something easy to type.${ENDCOLOR}"
                 read -n 1 -s -r -p "Press any key to continue to GPG password creation:"
                 gpg --full-generate-key
                 gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
             fi
             gpg --list-secret-keys --keyid-format LONG
-            gpgKey=$(printf "%.21s" "${gpgKey#*rsa}")
-            gpgKey=$(printf "%.16s" "${gpgKey#*\/}")
+            gpgKey=$(echo -e "%.21s" "${gpgKey#*rsa}")
+            gpgKey=$(echo -e "%.16s" "${gpgKey#*\/}")
             read -r -p "Is the following key correct: $gpgKey: y/n:" isCorrect
             if [[ "$isCorrect" =~ ^[Nn]$ ]]; then
                 gpgKey=""
@@ -533,7 +533,7 @@ step_5() {
             echo "set this up later using gpg and pass init"
         fi
 
-        printf "${GREEN}Completed Step 5\n\n${ENDCOLOR}"
+        echo -en "${GREEN}Completed Step 5\n\n${ENDCOLOR}"
     fi
 }
 
@@ -608,7 +608,7 @@ WantedBy=multi-user.target"
         echo "Create container-update.timer for systemD"
         sudo -u "$varname" echo "$timerD" >> "$updateTimerLocation"
     fi
-    printf "${GREEN}Completed step 6\n${ENDCOLOR}"
+    echo -en "${GREEN}Completed step 6\n${ENDCOLOR}"
 }
 
 ########################################
@@ -640,7 +640,7 @@ step_7() {
             fi
         done
         echo "Successfully installed lsper alias"
-        printf "${GREEN}Completed step 7\n${ENDCOLOR}"
+        echo -en "${GREEN}Completed step 7\n${ENDCOLOR}"
     else
         echo "Skipping lsper alias"
     fi
@@ -659,7 +659,6 @@ echo "============================================"
 print_logo
 select_user
 
-# printf '%s:\tport: %s\n' "$(DATABASE)" "$(DATABASE_PORT)" | expand -t 20
 echo "============================================================"
 echo "The following steps are available"
 echo "============================================================"
@@ -727,7 +726,7 @@ case "$stepSelect" in
         ;;
 esac
 
-printf "${GREEN}Setup completed succesfully!\n${ENDCOLOR}"
+echo -en "${GREEN}Setup completed succesfully!\n${ENDCOLOR}"
 read -r -p "Reboot required. Reboot now? y/n:" isReboot
 if [[ "$isReboot" =~ ^[Yy]$ ]]; then
     echo "Rebooting"
