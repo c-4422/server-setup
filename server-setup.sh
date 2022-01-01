@@ -85,68 +85,77 @@ lrAlias=("# Alias's created by C-4422 Setup Script"
 ########################################
 print_logo() {
     # C-4422 pixel art routine, not important for execution
-    otterPixelArt=("oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo"
-    "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo"
-    "oooo" "oooo" "oooo" "6TIM" "6TIM" "6TIM" "6TIM" "oooo" "oooo" "oooo" "oooo" "6TIM" "6TIM" "6TIM" "6TIM" "6TIM" "6TIM" "6TIM" "6TIM" "oooo" "oooo" "oooo" "oooo" "6TIM" "6TIM" "6TIM" "6TIM" "oooo" "oooo" "oooo"
-    "oooo" "oooo" "6TIM" "GGJ3" "6TIM" "GGJ3" "GGJ3" "6TIM" "oooo" "6TIM" "6TIM" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "6TIM" "6TIM" "oooo" "6TIM" "GGJ3" "GGJ3" "6TIM" "GGJ3" "6TIM" "oooo" "oooo"
-    "oooo" "6TIM" "GGJ3" "GGJ3" "X[K0" "6TIM" "GGJ3" "GGJ3" "6TIM" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "6TIM" "GGJ3" "GGJ3" "6TIM" "X[K0" "GGJ3" "GGJ3" "6TIM" "oooo"
-    "oooo" "6TIM" "GGJ3" "X[K0" "X[K0" "X[K0" "6TIM" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "6TIM" "X[K0" "X[K0" "X[K0" "GGJ3" "6TIM" "oooo"
-    "oooo" "6TIM" "GGJ3" "X[K0" "X[K0" "6TIM" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "6TIM" "X[K0" "X[K0" "GGJ3" "6TIM" "oooo"
-    "oooo" "6TIM" "GGJ3" "GGJ3" "X[K0" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "X[K0" "GGJ3" "GGJ3" "6TIM" "oooo"
-    "oooo" "oooo" "6TIM" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "6TIM" "oooo" "oooo"
-    "oooo" "oooo" "oooo" "6TIM" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "6TIM" "oooo" "oooo" "oooo"
-    "oooo" "oooo" "6TIM" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "6TIM" "oooo" "oooo"
-    "oooo" "oooo" "6TIM" "GGJ3" "GGJ3" "GGJ3" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "GGJ3" "GGJ3" "GGJ3" "6TIM" "oooo" "oooo"
-    "oooo" "6TIM" "GGJ3" "GGJ3" "GGJ3" "!!!!" "!!!!" "!!!!" "!!!!" "````" "!!!!" "!!!!" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "!!!!" "!!!!" "!!!!" "!!!!" "````" "!!!!" "!!!!" "GGJ3" "GGJ3" "GGJ3" "6TIM" "oooo"
-    "oooo" "6TIM" "GGJ3" "GGJ3" "GGJ3" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "GGJ3" "GGJ3" "GGJ3" "6TIM" "oooo"
-    "oooo" "6TIM" "GGJ3" "GGJ3" "GGJ3" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "GGJ3" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "GGJ3" "GGJ3" "GGJ3" "6TIM" "oooo"
-    "oooo" "6TIM" "GGJ3" "X[K0" "X[K0" "X[K0" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "GGJ3" "04=V" "04=V" "04=V" "04=V" "04=V" "04=V" "GGJ3" "!!!!" "!!!!" "!!!!" "!!!!" "!!!!" "X[K0" "X[K0" "X[K0" "GGJ3" "6TIM" "oooo"
-    "oooo" "6TIM" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "04=V" "04=V" "04=V" "04=V" "04=V" "04=V" "04=V" "04=V" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "6TIM" "oooo"
-    "6TIM" "GGJ3" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "04=V" "04=V" "04=V" "04=V" "04=V" "04=V" "04=V" "04=V" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "GGJ3" "6TIM"
-    "6TIM" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "04=V" "04=V" "04=V" "04=V" "04=V" "04=V" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "6TIM"
-    "6TIM" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "04=V" "04=V" "04=V" "04=V" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "6TIM"
-    "6TIM" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "6TIM" "6TIM" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "6TIM"
-    "6TIM" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "6TIM" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "6TIM" "6TIM" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "6TIM" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "6TIM"
-    "6TIM" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "6TIM" "6TIM" "6TIM" "6TIM" "6TIM" "X[K0" "X[K0" "6TIM" "6TIM" "6TIM" "6TIM" "6TIM" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "6TIM"
-    "6TIM" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "6TIM"
-    "6TIM" "GGJ3" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "GGJ3" "6TIM"
-    "oooo" "6TIM" "GGJ3" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "GGJ3" "6TIM" "oooo"
-    "oooo" "oooo" "6TIM" "6TIM" "GGJ3" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "GGJ3" "6TIM" "6TIM" "oooo" "oooo"
-    "oooo" "oooo" "oooo" "oooo" "6TIM" "GGJ3" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "GGJ3" "6TIM" "oooo" "oooo" "oooo" "oooo"
-    "oooo" "oooo" "oooo" "oooo" "oooo" "6TIM" "6TIM" "6TIM" "6TIM" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "6TIM" "6TIM" "6TIM" "6TIM" "oooo" "oooo" "oooo" "oooo" "oooo"
-    "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "6TIM" "GGJ3" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "X[K0" "GGJ3" "6TIM" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo" "oooo")
+    otterPixelArt=(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0
+0 1 2 1 2 2 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 2 2 1 2 1 0
+1 2 2 3 1 2 2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 1 3 2 2 1
+1 2 3 3 3 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 1 3 3 3 2 1
+1 2 3 3 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 1 3 3 2 1
+1 2 2 3 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 3 2 2 1
+0 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 1 0
+0 0 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 1 0 0
+0 0 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 1 0 0
+0 0 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 1 0 0
+0 1 2 2 2 4 4 4 4 4 2 2 2 2 2 2 2 2 2 2 4 4 4 4 4 2 2 2 1 0
+0 1 2 2 4 4 4 4 5 4 4 2 2 2 2 2 2 2 2 4 4 4 4 5 4 4 2 2 1 0
+0 1 2 2 4 4 4 4 4 4 4 2 2 2 2 2 2 2 2 4 4 4 4 4 4 4 2 2 1 0
+0 1 2 3 4 4 4 4 4 4 4 2 2 2 2 2 2 2 2 4 4 4 4 4 4 4 3 2 1 0
+1 3 3 3 3 4 4 4 4 4 3 2 6 6 6 6 6 6 2 3 4 4 4 4 4 3 3 3 3 1
+1 3 3 3 3 3 3 3 3 3 3 6 7 7 7 7 7 7 6 3 3 3 3 3 3 3 3 3 3 1
+1 3 3 3 3 3 3 3 3 3 3 7 7 7 7 7 7 7 7 3 3 3 3 3 3 3 3 3 3 1
+1 3 3 3 3 3 3 3 3 3 3 3 7 7 7 7 7 7 3 3 3 3 3 3 3 3 3 3 3 1
+1 3 3 3 3 3 3 3 3 3 3 3 3 7 7 7 7 3 3 3 3 3 3 3 3 3 3 3 3 1
+1 3 3 3 3 3 3 3 3 3 3 3 3 3 1 1 3 3 3 3 3 3 3 3 3 3 3 3 3 1
+1 3 3 3 3 3 3 3 1 3 3 3 3 3 1 1 3 3 3 3 3 1 3 3 3 3 3 3 3 1
+1 3 3 3 3 3 3 3 3 1 1 1 1 1 3 3 1 1 1 1 1 3 3 3 3 3 3 3 3 1
+1 8 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 8 1
+0 1 8 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 8 1 0
+0 1 1 8 8 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 8 8 1 1 0
+0 0 0 1 1 8 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 8 1 1 0 0 0
+0 0 0 0 0 1 1 1 8 3 3 3 3 3 3 3 3 3 3 3 3 8 1 1 1 0 0 0 0 0
+0 0 0 0 0 0 0 0 1 1 3 3 3 3 3 3 3 3 3 3 1 1 0 0 0 0 0 0 0 0)
     count=0
     for i in "${otterPixelArt[@]}"
     do
-        case "$i" in
-            "oooo")
+        case $i in
+            0)
                 # Transparent
                 echo -en "  "
                 ;;
-            "!!!!")
-                # Black
-                echo -en "\x1b[38;2;0;0;0m██\x1b[0m"
-                ;;
-            "6TIM")
+            1)
                 # Dark Brown
                 echo -en "\x1b[38;2;87;58;44m██\x1b[0m"
                 ;;
-            "GGJ3")
+            2)
                 # Brown
                 echo -en "\x1b[38;2;154;106;82m██\x1b[0m"
                 ;;
-            "04=V")
+            3)
                 # Gray
-                echo -en "\x1b[38;2;61;55;53m██\x1b[0m"
+                echo -en "\x1b[38;2;239;187;167m██\x1b[0m"
                 ;;
-            "````")
+            4)
+                # Black
+                echo -en "\x1b[38;2;0;0;0m██\x1b[0m"
+                ;;
+            5)
                 # White
                 echo -en "\x1b[38;2;255;255;255m██\x1b[0m"
                 ;;
-            "X[K0")
-                # Light Brown
-                echo -en "\x1b[38;2;233;170;143m██\x1b[0m"
+            6)
+                # Light Pink
+                echo -en "\x1b[38;2;254;124;160m██\x1b[0m"
                 ;;
+            7)
+                # Darker Pink
+                echo -en "\x1b[38;2;186;91;117m██\x1b[0m"
+                ;;
+            8)
+                # Shading Brown
+                echo -en "\x1b[38;2;154;106;82m██\x1b[0m"
+                ;;
+
         esac
         let "count+=1"
         if (( $count % 30 == 0 ))
