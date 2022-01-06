@@ -508,9 +508,10 @@ step_5() {
         echo -en "${RED}in order to configure pass.\n${ENDCOLOR}"
         echo -en "${RED}Skipping Step 4\n\n${ENDCOLOR}"
     else
-        echo "Configure pass? A basic password manager"
-        echo "extremely useful for managing server"
-        read -r -p "application passwords, y/n:" isPass
+        echo "Configure pass? A basic password manager used"
+        echo "to load in passwords for podman applications"
+        echo "C-4422 has configured."
+        read -r -p "HINT: you should set this up. Configure Pass? y/n:" isPass
         if [[ "$isPass" =~ ^[Yy]$ ]]; then
             gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
             if [ "$gpgKey" == "" ]; then
@@ -539,7 +540,8 @@ step_5() {
             done
         else
             echo "Skipping pass configuration, you can always"
-            echo "set this up later using gpg and pass init"
+            echo "set this up later using this script or manually"
+            echo "running gpg and pass init"
         fi
 
         echo -en "${GREEN}Completed Step 5\n\n${ENDCOLOR}"
@@ -626,6 +628,28 @@ WantedBy=multi-user.target"
 ########################################
 step_7() {
     echo "--------------------------------------------"
+    echo "Step 7: Configure containers configuration"
+    echo "        folder. The containers folder will"
+    echo "        hold all of the makefiles used to"
+    echo "        make podman applications and to hold"
+    echo "        the various commands needed to run"
+    echo "        the containers"
+    echo "--------------------------------------------"
+    echo "Making containers directory at:"
+    echo "/home/$varname/containers"
+    sudo -u "$varname" mkdir -p -- "/home/$varname/containers"
+    read -r -p "HINT: you should download this file if you don't have it. Download master Makefile? y/n:" isDownload
+    if [[ "$isDownload" =~ ^[Yy]$ ]]; then
+        wget -P "/home/$varname/containers" https://raw.githubusercontent.com/c-4422/app-configs/main/Makefile
+    fi
+}
+
+########################################
+# FUNCTION
+#   step_8()
+########################################
+step_8() {
+    echo "--------------------------------------------"
     echo "Step 7: Add lsper alias to .bashrc"
     echo "--------------------------------------------"
     echo "Adding command lsper to .bashrc, this is not"
@@ -690,14 +714,20 @@ echo "--------------------------------------------"
 echo "     4: Configure systemd user settings,"
 echo "        configure podman to use fuse-fs."
 echo "--------------------------------------------"
-echo "[OPTIONAL]"
 echo "     5: Configure pass password manager"
 echo "--------------------------------------------"
 echo "     6: Configure automatic updates and"
 echo "        backup service."
 echo "--------------------------------------------"
+echo "     7: Configure containers configuration"
+echo "        folder. The containers folder will"
+echo "        hold all of the makefiles used to"
+echo "        make podman applications and to hold"
+echo "        the various commands needed to run"
+echo "        the containers"
+echo "--------------------------------------------"
 echo "[OPTIONAL]"
-echo "     7: Add lsper alias to .bashrc"
+echo "     8: Add lsper alias to .bashrc"
 echo "--------------------------------------------"
 read -r -p "Select the step you wish to execute (1-6, Default All=A):" stepSelect
 
@@ -723,6 +753,9 @@ case "$stepSelect" in
     "7")
         step_7
         ;;
+    "8")
+        step_8
+        ;;
     *)
         # Default
         step_1
@@ -732,6 +765,7 @@ case "$stepSelect" in
         step_5
         step_6
         step_7
+        step_8
         ;;
 esac
 
