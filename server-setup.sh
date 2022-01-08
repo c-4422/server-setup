@@ -652,7 +652,7 @@ step_7() {
 ########################################
 step_8() {
     echo "--------------------------------------------"
-    echo "Step 7: Add lsper alias to .bashrc"
+    echo "Step 8: Add lsper alias to .bashrc"
     echo "--------------------------------------------"
     echo "Adding command lsper to .bashrc, this is not"
     echo "crucial to system function. lsper stands for"
@@ -675,7 +675,7 @@ step_8() {
             fi
         done
         echo "Successfully installed lsper alias"
-        echo -en "${GREEN}Completed step 7\n${ENDCOLOR}"
+        echo -en "${GREEN}Completed step 8\n${ENDCOLOR}"
     else
         echo "Skipping lsper alias"
     fi
@@ -731,7 +731,7 @@ echo "--------------------------------------------"
 echo "[OPTIONAL]"
 echo "     8: Add lsper alias to .bashrc"
 echo "--------------------------------------------"
-read -r -p "Select the step you wish to execute (1-6, Default All=A): " stepSelect
+read -r -p "Select the step you wish to execute (1-8, Default All=A): " stepSelect
 
 case "$stepSelect" in
     "1")
