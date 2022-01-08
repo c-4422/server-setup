@@ -731,7 +731,7 @@ echo "--------------------------------------------"
 echo "[OPTIONAL]"
 echo "     8: Add lsper alias to .bashrc"
 echo "--------------------------------------------"
-read -r -p "Select the step you wish to execute (1-6, Default All=A):" stepSelect
+read -r -p "Select the step you wish to execute (1-6, Default All=A): " stepSelect
 
 case "$stepSelect" in
     "1")
@@ -772,7 +772,7 @@ case "$stepSelect" in
 esac
 
 echo -en "${GREEN}Setup completed succesfully!\n${ENDCOLOR}"
-read -r -p "Reboot required. Reboot now? y/n:" isReboot
+read -r -p "Reboot required. Reboot now? y/n: " isReboot
 if [[ "$isReboot" =~ ^[Yy]$ ]]; then
     echo "Rebooting"
     sudo reboot
