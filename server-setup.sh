@@ -187,7 +187,7 @@ select_user() {
     else
         echo "User does not exist. Script cannot continue"
         echo "without a valid user. Would you like to create"
-        read -r -p "the user: $varname y/n:" createuser
+        read -r -p "the user: $varname y/n: " createuser
         if [[ "$createuser" =~ ^[Yy]$ ]]; then
             echo "Creating user $varname"
             sudo useradd "$varname"
@@ -340,7 +340,7 @@ net.ipv4.ip_unprivileged_port_start=80
     echo -e "${RED}      not enable additional security parameters, it will${ENDCOLOR}"
     echo -e "${RED}      cause said applications to not work.${ENDCOLOR}"
     echo -e "Select to enable disable or leave as is (Current status: ${RED}$securityStatus${ENDCOLOR})"
-    read -r -p " [Enable=e, Disable=d, default (leave as is)=l]:" selection
+    read -r -p " [Enable=e, Disable=d, default (leave as is)=l]: " selection
 
     case "$selection" in
     "e")
@@ -531,7 +531,7 @@ step_5() {
             gpg --list-secret-keys --keyid-format LONG
             gpgKey=$(printf "%.21s" "${gpgKey#*rsa}")
             gpgKey=$(printf "%.16s" "${gpgKey#*\/}")
-            read -r -p "Is the following key correct: $gpgKey: y/n:" isCorrect
+            read -r -p "Is the following key correct: $gpgKey: y/n: " isCorrect
             if [[ "$isCorrect" =~ ^[Nn]$ ]]; then
                 gpgKey=""
             fi
@@ -731,7 +731,7 @@ echo "--------------------------------------------"
 echo "[OPTIONAL]"
 echo "     8: Add lsper alias to .bashrc"
 echo "--------------------------------------------"
-read -r -p "Select the step you wish to execute (1-6, Default All=A):" stepSelect
+read -r -p "Select the step you wish to execute (1-6, Default All=A): " stepSelect
 
 case "$stepSelect" in
     "1")
@@ -772,7 +772,7 @@ case "$stepSelect" in
 esac
 
 echo -en "${GREEN}Setup completed succesfully!\n${ENDCOLOR}"
-read -r -p "Reboot required. Reboot now? y/n:" isReboot
+read -r -p "Reboot required. Reboot now? y/n: " isReboot
 if [[ "$isReboot" =~ ^[Yy]$ ]]; then
     echo "Rebooting"
     sudo reboot
