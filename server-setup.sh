@@ -331,7 +331,7 @@ net.ipv4.ip_unprivileged_port_start=80
         securityStatus="partially enabled"
     fi
 
-    echo -n "\n"
+    echo ""
     echo "Currently additional security measures are $securityStatus."
     echo "Additional security is used for mitigating / preventing"
     echo "man in the middle network attacks. These security measures"
@@ -384,7 +384,7 @@ step_3() {
         isConfigured=true
     else
         echo "---------------------------------------------------------------"
-        echo "SRV_LOCATION is not set, The default srv location is:"
+        echo "SRV_LOCATION is not set. The default srv location is:"
         echo "/srv/$varname"
         echo -e "${RED}Note that if you set a custom srv location the folder you${ENDCOLOR}"
         echo -e "${RED}specify should already exist${ENDCOLOR}"
@@ -428,7 +428,7 @@ step_3() {
         isConfigured=true
     else
         echo "---------------------------------------------------------------"
-        echo "STORAGE_LOCATION is not set the default storage location is:"
+        echo "STORAGE_LOCATION is not. The default storage location is:"
         echo "/storage/$varname"
         echo -e "${RED}Note that the default storage location will install on the${ENDCOLOR}"
         echo -e "${RED}root of the OS drive. If you have a second hard drive you${ENDCOLOR}"
@@ -488,8 +488,10 @@ step_4() {
 
     echo "Enable user systemd startup and persist settings"
     sudo loginctl enable-linger "$varname"
-    echo "Enable fuse-overlay file system fo use with rootless podman"
+    echo "Enable fuse-overlay file system for use with rootless podman"
     sudo sed -i 's/#mount_program = "\/usr\/bin\/fuse-overlayfs"/mount_program = "\/usr\/bin\/fuse-overlayfs"/' /etc/containers/storage.conf
+    echo "Enable rootless podman storage path: ~/.local/share/containers/storage"
+    sudo sed -i '/rootless_storage_path/c\rootless_storage_path = "$HOME\/.local\/share\/containers\/storage"' /etc/containers/storage.conf
 
     echo -en "${GREEN}Completed Step 4\n\n${ENDCOLOR}"
 }
@@ -511,7 +513,7 @@ step_5() {
         echo "Configure pass? A basic password manager used"
         echo "to load in passwords for podman applications"
         echo "C-4422 has configured."
-        read -r -p "HINT: you should set this up. Configure Pass? y/n:" isPass
+        read -r -p "HINT: you should set this up. Configure Pass? y/n: " isPass
         if [[ "$isPass" =~ ^[Yy]$ ]]; then
             gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
             if [ "$gpgKey" == "" ]; then
@@ -527,8 +529,8 @@ step_5() {
                 gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
             fi
             gpg --list-secret-keys --keyid-format LONG
-            gpgKey=$(echo -e "%.21s" "${gpgKey#*rsa}")
-            gpgKey=$(echo -e "%.16s" "${gpgKey#*\/}")
+            gpgKey=$(printf "%.21s" "${gpgKey#*rsa}")
+            gpgKey=$(printf "%.16s" "${gpgKey#*\/}")
             read -r -p "Is the following key correct: $gpgKey: y/n:" isCorrect
             if [[ "$isCorrect" =~ ^[Nn]$ ]]; then
                 gpgKey=""
@@ -638,9 +640,9 @@ step_7() {
     echo "Making containers directory at:"
     echo "/home/$varname/containers"
     sudo -u "$varname" mkdir -p -- "/home/$varname/containers"
-    read -r -p "HINT: you should download this file if you don't have it. Download master Makefile? y/n:" isDownload
+    read -r -p "HINT: you should download this file if you don't have it. Download master Makefile? y/n: " isDownload
     if [[ "$isDownload" =~ ^[Yy]$ ]]; then
-        wget -P "/home/$varname/containers" https://raw.githubusercontent.com/c-4422/app-configs/main/Makefile
+        curl -o "/home/$varname/Makefile" https://raw.githubusercontent.com/c-4422/app-configs/main/Makefile
     fi
 }
 
@@ -657,7 +659,7 @@ step_8() {
     echo "list permissions. The idea is that after ls -al"
     echo "you can types lsper which will tell you what the"
     echo "columns mean."
-    read -r -p "Install lsper alias? y/n:" isLsper
+    read -r -p "Install lsper alias? y/n: " isLsper
     if [[ "$isLsper" =~ ^[Yy]$ ]]; then
         lsPerLocation="/home/$varname/.bashrc.d/permissions.txt"
         sudo -u "$varname" mkdir -p -- "/home/$varname/.bashrc.d"
