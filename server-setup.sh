@@ -310,7 +310,7 @@ net.ipv4.ip_unprivileged_port_start=80
     else
         echo "Create $sysParams"
         echo "Set unprivileged port start to 80"
-        sudo /bin/su -c "echo '$basicKernelParam' >> $sysParams"
+        echo "$basicKernelParam" | sudo tee "$sysParams"
     fi
     
     for (( i=0; i<${#sysctlSecurity[@]}; i=i+2 ))
@@ -350,7 +350,7 @@ net.ipv4.ip_unprivileged_port_start=80
                 # Look for security parameters and enable them
                 sudo /bin/su -c "sed -i '/${sysctlSecurity[$i]}/c\\${sysctlSecurity[$i]}=${sysctlSecurity[$i+1]}' $sysParams"
             else
-                sudo /bin/su -c "echo '${sysctlSecurity[$i]}=${sysctlSecurity[$i+1]}' >> $sysParams"
+                echo "${sysctlSecurity[$i]}=${sysctlSecurity[$i+1]}" | sudo tee -a $sysParams
             fi
         done
         ;;
