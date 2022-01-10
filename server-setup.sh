@@ -364,7 +364,7 @@ net.ipv4.ip_unprivileged_port_start=80
         ;;
     esac
 
-    echo -en "${GREEN}Completed Step 1\n\n${ENDCOLOR}"
+    echo -en "${GREEN}Completed Step 2\n\n${ENDCOLOR}"
 }
 
 ########################################
@@ -428,7 +428,7 @@ step_3() {
         isConfigured=true
     else
         echo "---------------------------------------------------------------"
-        echo "STORAGE_LOCATION is not. The default storage location is:"
+        echo "STORAGE_LOCATION is not set. The default storage location is:"
         echo "/storage/$varname"
         echo -e "${RED}Note that the default storage location will install on the${ENDCOLOR}"
         echo -e "${RED}root of the OS drive. If you have a second hard drive you${ENDCOLOR}"
@@ -644,6 +644,8 @@ step_7() {
     if [[ "$isDownload" =~ ^[Yy]$ ]]; then
         curl -o "/home/$varname/Makefile" https://raw.githubusercontent.com/c-4422/app-configs/main/Makefile
     fi
+
+    echo -en "${GREEN}Completed step 7\n${ENDCOLOR}"
 }
 
 ########################################
