@@ -217,7 +217,7 @@ step_1() {
     sudo usermod -aG wheel "$varname"
     sudo dnf install epel-release -y
     sudo dnf update -y
-    sudo dnf install make crun podman pass cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed -y
+    sudo dnf install make crun podman pass cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano -y
     echo "Enable cockpit service"
     sudo systemctl enable cockpit.socket
     sudo systemctl start cockpit.socket
