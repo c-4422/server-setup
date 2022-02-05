@@ -2,6 +2,7 @@
 ###################################################################
 # SERVER SETUP SCRIPT
 #
+#   Made in Kansas
 #   by C-4422
 # 9b6b87bf3d3f44de936e7283ce4e555402feb741a005dfdc70cbbe2f08581911
 # 353b5bd8ab63aa7d4f15f462ef001d7b12f1abd6d32b9f9751ef7d9df9b3462a
