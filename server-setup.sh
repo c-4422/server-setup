@@ -36,7 +36,7 @@
 ###################################################################
 # File definitions and variables
 ###################################################################
-version="1.0.0"
+version="1.0.1"
 varname="null"
 RED="\\033[0;31m"
 GREEN="\\033[0;32m"
@@ -44,7 +44,7 @@ ENDCOLOR="\\x1b[0m"
 
 autoUpdateBackupScript="#!/bin/bash
 ################################################
-# v1.00
+# v1.0.0
 # Automatic Update and Backup Script
 # Auto-generated from server-setup.sh script
 # by C-4422
@@ -207,13 +207,14 @@ select_user() {
 # FUNCTION
 #   step_1()
 ########################################
+step_1_comment="--------------------------------------------
+     1: Add selected user to sudo group,
+        install all necessary programs.
+        Enable software services, verify
+        sudo is enabled.
+        Enable cockpit and Fail2ban."
 step_1() {
-    echo "--------------------------------------------"
-    echo "Step 1: Add selected user to sudo group,"
-    echo "        install all necessary programs."
-    echo "        Enable software services, verify"
-    echo "        sudo is enabled."
-    echo "        Enable cockpit and Fail2ban."
+    echo "$step_1_comment"
     echo "--------------------------------------------"
     sudo usermod -aG wheel "$varname"
     sudo dnf install epel-release -y
@@ -236,13 +237,14 @@ step_1() {
 # FUNCTION
 #   step_2()
 ########################################
+step_2_comment="--------------------------------------------
+     2: Modify kernel parameters so that
+        port 80 is usable with rootless
+        podman.
+        Enable / Disable additional kernel
+        parameters for added security."
 step_2() {
-    echo "--------------------------------------------"
-    echo "     2: Modify kernel parameters so that"
-    echo "        port 80 is usable with rootless"
-    echo "        podman."
-    echo "        Enable / Disable additional kernel"
-    echo "        parameters for added security."
+    echo "$step_2_comment"
     echo "--------------------------------------------"
 
     numEnabledSecurityParams=0
@@ -372,10 +374,11 @@ net.ipv4.ip_unprivileged_port_start=80
 # FUNCTION
 #   step_3()
 ########################################
+step_3_comment="--------------------------------------------
+     3: Configure folders for podman
+        persistent storage"
 step_3() {
-    echo "--------------------------------------------"
-    echo "Step 3: Configure folders for podman"
-    echo "        persistent storage"
+    echo "$step_3_comment"
     echo "--------------------------------------------"
     
     # Set SRV_LOCATION user environment variable
@@ -476,10 +479,11 @@ step_3() {
 # FUNCTION
 #   step_4()
 ########################################
+step_4_comment="--------------------------------------------
+     4: Configure systemd user settings,
+        configure podman to use fuse-fs."
 step_4() {
-    echo "--------------------------------------------"
-    echo "Step 4: Configure systemd user settings,"
-    echo "        configure podman to use fuse-fs."
+    echo "$step_4_comment"
     echo "--------------------------------------------"
     echo "Configure $varname user systemd folder"
 
@@ -501,9 +505,10 @@ step_4() {
 # FUNCTION
 #   step_4()
 ########################################
+step_5_comment="--------------------------------------------
+     5: Configure pass password manager"
 step_5() {
-    echo "--------------------------------------------"
-    echo "Step 5: Configure pass password manager"
+    echo "$step_5_comment"
     echo "--------------------------------------------"
     currentUser=$(whoami)
     if [[ "$currentUser" != "$varname" ]]; then
@@ -555,10 +560,11 @@ step_5() {
 # FUNCTION
 #   step_6()
 ########################################
+step_6_comment="--------------------------------------------
+     6: Configure automatic updates and
+        backup service."
 step_6() {
-    echo "--------------------------------------------"
-    echo "Step 6: Configure automatic updates and"
-    echo "        backup service."
+    echo "$step_6_comment"
     echo "--------------------------------------------"
     echo "Configure folder structure for automatic"
     echo "container updates and backups."
@@ -629,21 +635,32 @@ WantedBy=multi-user.target"
 # FUNCTION
 #   step_7()
 ########################################
+step_7_comment="--------------------------------------------
+     7: Configure containers configuration
+        folder. The containers folder will
+        hold all of the makefiles used to
+        make podman applications and to hold
+        the various commands needed to run
+        the containers"
 step_7() {
+    echo "$step_7_comment"
     echo "--------------------------------------------"
-    echo "Step 7: Configure containers configuration"
-    echo "        folder. The containers folder will"
-    echo "        hold all of the makefiles used to"
-    echo "        make podman applications and to hold"
-    echo "        the various commands needed to run"
-    echo "        the containers"
-    echo "--------------------------------------------"
+    makefileLocation="/home/$varname/Makefile"
+
     echo "Making containers directory at:"
     echo "/home/$varname/containers"
     sudo -u "$varname" mkdir -p -- "/home/$varname/containers"
-    read -r -p "HINT: you should download this file if you don't have it. Download master Makefile? y/n: " isDownload
-    if [[ "$isDownload" =~ ^[Yy]$ ]]; then
-        curl -o "/home/$varname/Makefile" https://raw.githubusercontent.com/c-4422/app-configs/main/Makefile
+    if [ -f "$makefileLocation" ]; then
+        echo "Notice: $makefileLocation file exists"
+        echo "======"
+        echo "Because this file exists, assume it should not be modified or"
+        echo "changed. This is done to preserve user settings."
+        echo "======"
+    else
+        read -r -p "HINT: you should download this file if you don't have it. Download master Makefile? y/n: " isDownload
+        if [[ "$isDownload" =~ ^[Yy]$ ]]; then
+            curl -o "$makefileLocation" https://raw.githubusercontent.com/c-4422/app-configs/main/Makefile
+        fi
     fi
 
     echo -en "${GREEN}Completed step 7\n${ENDCOLOR}"
@@ -653,9 +670,11 @@ step_7() {
 # FUNCTION
 #   step_8()
 ########################################
+step_8_comment="--------------------------------------------
+[OPTIONAL]
+     8: Add lsper alias to .bashrc"
 step_8() {
-    echo "--------------------------------------------"
-    echo "Step 8: Add lsper alias to .bashrc"
+    echo "$step_8_comment"
     echo "--------------------------------------------"
     echo "Adding command lsper to .bashrc, this is not"
     echo "crucial to system function. lsper stands for"
@@ -700,39 +719,14 @@ select_user
 echo "============================================================"
 echo "The following steps are available"
 echo "============================================================"
-echo "--------------------------------------------"
-echo "     1: Add selected user to sudo group,"
-echo "        install all necessary programs."
-echo "        Enable software services, verify"
-echo "        sudo is enabled."
-echo "        Enable cockpit and Fail2ban."
-echo "--------------------------------------------"
-echo "     2: Modify kernel parameters so that"
-echo "        port 80 is usable with rootless"
-echo "        podman."
-echo "        Enable / Disable additional kernel"
-echo "        parameters for added security."
-echo "--------------------------------------------"
-echo "     3: Configure folders for podman"
-echo "        persistent storage"
-echo "--------------------------------------------"
-echo "     4: Configure systemd user settings,"
-echo "        configure podman to use fuse-fs."
-echo "--------------------------------------------"
-echo "     5: Configure pass password manager"
-echo "--------------------------------------------"
-echo "     6: Configure automatic updates and"
-echo "        backup service."
-echo "--------------------------------------------"
-echo "     7: Configure containers configuration"
-echo "        folder. The containers folder will"
-echo "        hold all of the makefiles used to"
-echo "        make podman applications and to hold"
-echo "        the various commands needed to run"
-echo "        the containers"
-echo "--------------------------------------------"
-echo "[OPTIONAL]"
-echo "     8: Add lsper alias to .bashrc"
+echo "$step_1_comment"
+echo "$step_2_comment"
+echo "$step_3_comment"
+echo "$step_4_comment"
+echo "$step_5_comment"
+echo "$step_6_comment"
+echo "$step_7_comment"
+echo "$step_8_comment"
 echo "--------------------------------------------"
 read -r -p "Select the step you wish to execute (1-8, Default All=A): " stepSelect
 
