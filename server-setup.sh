@@ -78,7 +78,7 @@ lsPerCommand="-rw-r--r-- 12 linuxize users 12.0K Apr  28 10:10 file_name
 +------------------------------------> 1. File Type"
 
 lrAlias=("# Alias's created by C-4422 Setup Script"
-"alias lsper='cat ~/.bashrc.d/permissions.txt'")
+"alias lsper='cat ~/.local/lsper/permissions.txt'")
 
 ########################################
 # FUNCTION
@@ -219,7 +219,10 @@ step_1() {
     sudo usermod -aG wheel "$varname"
     sudo dnf install epel-release -y
     sudo dnf update -y
-    sudo dnf install make crun podman pass cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano -y
+    sudo dnf install make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano -y
+    if ! sudo dnf install pass -y; then
+        echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
+    fi
     echo "Enable cockpit service"
     sudo systemctl enable cockpit.socket
     sudo systemctl start cockpit.socket
@@ -503,7 +506,7 @@ step_4() {
 
 ########################################
 # FUNCTION
-#   step_4()
+#   step_5()
 ########################################
 step_5_comment="--------------------------------------------
      5: Configure pass password manager"
@@ -514,45 +517,58 @@ step_5() {
     if [[ "$currentUser" != "$varname" ]]; then
         echo -en "${RED}You need to be logged in as $varname\n${ENDCOLOR}"
         echo -en "${RED}in order to configure pass.\n${ENDCOLOR}"
-        echo -en "${RED}Skipping Step 4\n\n${ENDCOLOR}"
+        echo -en "${RED}Skipping Step 5\n\n${ENDCOLOR}"
     else
-        echo "Configure pass? A basic password manager used"
-        echo "to load in passwords for podman applications"
-        echo "C-4422 has configured."
-        read -r -p "HINT: you should set this up. Configure Pass? y/n: " isPass
-        if [[ "$isPass" =~ ^[Yy]$ ]]; then
-            gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
-            if [ "$gpgKey" == "" ]; then
-                echo -e "${RED}When prompted for the following:${ENDCOLOR}"
-                echo -e "${RED}    1. 'Your selection?' hit enter to select default${ENDCOLOR}"
-                echo -e "${RED}    2. 'What key size do you want' hit enter to select default${ENDCOLOR}"
-                echo -e "${RED}    3. 'Key is valid for? (0)' hit enter to select default${ENDCOLOR}"
-                echo -e "${RED}It will then ask you if this is correct enter y${ENDCOLOR}"
-                echo -e "${RED}You will then be prompted to enter your name and password.${ENDCOLOR}"
-                echo -e "${RED}I advise you make the password something easy to type.${ENDCOLOR}"
-                read -n 1 -s -r -p "Press any key to continue to GPG password creation:"
-                gpg --full-generate-key
-                gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
-            fi
-            gpg --list-secret-keys --keyid-format LONG
-            gpgKey=$(printf "%.21s" "${gpgKey#*rsa}")
-            gpgKey=$(printf "%.16s" "${gpgKey#*\/}")
-            read -r -p "Is the following key correct: $gpgKey: y/n: " isCorrect
-            if [[ "$isCorrect" =~ ^[Nn]$ ]]; then
-                gpgKey=""
-            fi
-            while ! pass init "$gpgKey" ; do
-                echo "Key ID incorrect enter correct key"
-                gpg --list-secret-keys --keyid-format LONG
-                read -r -p "KeyID = " gpgKey 
-            done
+        if ! [ -x "$(command -v pass)" ]; then
+            echo -en "${RED}NOTICE: pass has not been installed\n${ENDCOLOR}"
+            echo -en "${GREEN}No need to worry. You can still continue.\n${ENDCOLOR}"
+            echo "You can possibly install pass later with your"
+            echo "distribution's package manager OR... pass is not"
+            echo "available for install. You can still run your"
+            echo "server without pass, it just means your passwords"
+            echo "will be stored in the secrets directory in plain"
+            echo "text files which is totally fine."
+            read -n 1 -s -r -p "Press any key to continue:"
+            echo -en "${RED}\nSkipping Step 5\n\n${ENDCOLOR}"
         else
-            echo "Skipping pass configuration, you can always"
-            echo "set this up later using this script or manually"
-            echo "running gpg and pass init"
-        fi
+            echo "Configure pass? A basic password manager used"
+            echo "to load in passwords for podman applications"
+            echo "C-4422 has configured."
+            read -r -p "HINT: you should set this up. Configure Pass? y/n: " isPass
+            if [[ "$isPass" =~ ^[Yy]$ ]]; then
+                gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
+                if [ "$gpgKey" == "" ]; then
+                    echo -e "${RED}When prompted for the following:${ENDCOLOR}"
+                    echo -e "${RED}    1. 'Your selection?' hit enter to select default${ENDCOLOR}"
+                    echo -e "${RED}    2. 'What key size do you want' hit enter to select default${ENDCOLOR}"
+                    echo -e "${RED}    3. 'Key is valid for? (0)' hit enter to select default${ENDCOLOR}"
+                    echo -e "${RED}It will then ask you if this is correct enter y${ENDCOLOR}"
+                    echo -e "${RED}You will then be prompted to enter your name and password.${ENDCOLOR}"
+                    echo -e "${RED}I advise you make the password something easy to type.${ENDCOLOR}"
+                    read -n 1 -s -r -p "Press any key to continue to GPG password creation:"
+                    gpg --full-generate-key
+                    gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
+                fi
+                gpg --list-secret-keys --keyid-format LONG
+                gpgKey=$(printf "%.21s" "${gpgKey#*rsa}")
+                gpgKey=$(printf "%.16s" "${gpgKey#*\/}")
+                read -r -p "Is the following key correct: $gpgKey: y/n: " isCorrect
+                if [[ "$isCorrect" =~ ^[Nn]$ ]]; then
+                    gpgKey=""
+                fi
+                while ! pass init "$gpgKey" ; do
+                    echo "Key ID incorrect enter correct key"
+                    gpg --list-secret-keys --keyid-format LONG
+                    read -r -p "KeyID = " gpgKey 
+                done
+            else
+                echo "Skipping pass configuration, you can always"
+                echo "set this up later using this script or manually"
+                echo "running gpg and pass init"
+            fi
 
-        echo -en "${GREEN}Completed Step 5\n\n${ENDCOLOR}"
+            echo -en "${GREEN}Completed Step 5\n\n${ENDCOLOR}"
+        fi
     fi
 }
 
@@ -683,8 +699,9 @@ step_8() {
     echo "columns mean."
     read -r -p "Install lsper alias? y/n: " isLsper
     if [[ "$isLsper" =~ ^[Yy]$ ]]; then
-        lsPerLocation="/home/$varname/.bashrc.d/permissions.txt"
-        sudo -u "$varname" mkdir -p -- "/home/$varname/.bashrc.d"
+        lsPerLocation="/home/$varname/.local/lsper/permissions.txt"
+        sudo -u "$varname" mkdir -p -- "/home/$varname/.local"
+        sudo -u "$varname" mkdir -p -- "/home/$varname/.local/lsper"
         if [ -f "$lsPerLocation" ]; then
             sudo -u "$varname" rm "$lsPerLocation"
         fi
