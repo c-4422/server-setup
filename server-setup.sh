@@ -52,13 +52,13 @@ autoUpdateBackupScript="#!/bin/bash
 # This script by default is called on the first
 # Wednesday of every month by SystemD
 #
-# Call all scripts found in the backups/scripts
+# Call all scripts found in the .server/scripts
 # folder and then call podman auto-update
 ################################################
 set -eo pipefail
 count=0
-if [ \"\$(ls -A ~/backups/scripts)\" ]; then
-    for f in ~/backups/scripts/*.sh; do
+if [ \"\$(ls -A ~/.server/scripts)\" ]; then
+    for f in ~/.server/scripts/*.sh; do
         let \"count+=1\"
         echo \"Step \$count. Entering script \$f\"
         bash \"\$f\"
@@ -653,28 +653,27 @@ step_6() {
     echo "--------------------------------------------"
     echo "Configure folder structure for automatic"
     echo "container updates and backups."
-    sudo -u "$user_name" mkdir -p -- "/home/$user_name/backups"
-    sudo -u "$user_name" mkdir -p -- "/home/$user_name/backups/service"
-    sudo -u "$user_name" mkdir -p -- "/home/$user_name/backups/scripts"
+    sudo -u "$user_name" mkdir -p -- "/home/$user_name/.server/service"
+    sudo -u "$user_name" mkdir -p -- "/home/$user_name/.server/scripts"
 
-    backupScriptLocation="/home/$user_name/backups/service/update-backup-main.sh"
-    updateServiceLocation="/home/$user_name/.config/systemd/user/container-update.service"
-    updateTimerLocation="/home/$user_name/.config/systemd/user/container-update.timer"
-    if [ -f "$backupScriptLocation" ]; then
-        echo "Notice: $backupScriptLocation file exists"
+    backup_script_location="/home/$user_name/.server/service/update-backup-main.sh"
+    update_service_location="/home/$user_name/.config/systemd/user/container-update.service"
+    update_timer_location="/home/$user_name/.config/systemd/user/container-update.timer"
+    if [ -f "$backup_script_location" ]; then
+        echo "Notice: $backup_script_location file exists"
         echo "======"
         echo "Because this file exists, assume it should not be modified or"
         echo "changed. This is done to preserve user settings."
         echo "======"
     else
         echo "Create update-backup-main.sh to run backup scripts"
-        sudo -u "$user_name" echo "$autoUpdateBackupScript" >> "$backupScriptLocation"
-        sudo chmod +x "$backupScriptLocation"
-        sudo chown $user_name:$user_name $backupScriptLocation
+        sudo -u "$user_name" echo "$autoUpdateBackupScript" >> "$backup_script_location"
+        sudo chmod +x "$backup_script_location"
+        sudo chown $user_name:$user_name $backup_script_location
     fi
 
-    if [ -f "$updateServiceLocation" ]; then
-        echo "Notice: $updateServiceLocation file exists"
+    if [ -f "$update_service_location" ]; then
+        echo "Notice: $update_service_location file exists"
         echo "======"
         echo "Because this file exists, assume it should not be modified or"
         echo "changed. This is done to preserve user settings."
@@ -685,18 +684,18 @@ Description=Auto backup and update Podman containers
 After=network.target
 
 [Service]
-WorkingDirectory=/home/$user_name/backups/service/
+WorkingDirectory=/home/$user_name/.server/service/
 Type=oneshot
-ExecStart=/bin/bash $backupScriptLocation
+ExecStart=/bin/bash $backup_script_location
 
 [Install]
 WantedBy=multi-user.target"
         echo "Create container-update.service for systemD"
-        sudo -u "$user_name" echo "$serviceD" >> "$updateServiceLocation"
+        sudo -u "$user_name" echo "$serviceD" >> "$update_service_location"
     fi
 
-    if [ -f "$updateTimerLocation" ]; then
-        echo "Notice: $updateTimerLocation file exists"
+    if [ -f "$update_timer_location" ]; then
+        echo "Notice: $update_timer_location file exists"
         echo "======"
         echo "Because this file exists, assume it should not be modified or"
         echo "changed. This is done to preserve user settings."
@@ -711,7 +710,7 @@ OnCalendar=Wed *-*-1..7 2:00:00
 [Install]
 WantedBy=multi-user.target"
         echo "Create container-update.timer for systemD"
-        sudo -u "$user_name" echo "$timerD" >> "$updateTimerLocation"
+        sudo -u "$user_name" echo "$timerD" >> "$update_timer_location"
     fi
     echo -en "${GREEN}Completed step 6\n${ENDCOLOR}"
 }
