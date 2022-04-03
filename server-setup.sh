@@ -36,8 +36,8 @@
 ###################################################################
 # File definitions and variables
 ###################################################################
-version="1.0.1"
-varname="null"
+version="1.1.0"
+user_name="null"
 RED="\\033[0;31m"
 GREEN="\\033[0;32m"
 ENDCOLOR="\\x1b[0m"
@@ -79,6 +79,7 @@ lsPerCommand="-rw-r--r-- 12 linuxize users 12.0K Apr  28 10:10 file_name
 
 lrAlias=("# Alias's created by C-4422 Setup Script"
 "alias lsper='cat ~/.local/lsper/permissions.txt'")
+alias_location="/home/$user_name/.bashrc.d/server-aliases"
 
 ########################################
 # FUNCTION
@@ -175,9 +176,9 @@ select_user() {
     echo "Enter the unprivileged username you"
     echo "will be running your podman applications on:"
     echo "--------------------------------------------"
-    read -r -p "Username: " varname
-    if id -u "$varname" >/dev/null 2>&1; then
-        echo "The user $varname will be configured"
+    read -r -p "Username: " user_name
+    if id -u "$user_name" >/dev/null 2>&1; then
+        echo "The user $user_name will be configured"
         read -r -p "for rootless podman. Is this correct? y/n: " isContinue
         if [[ "$isContinue" =~ ^[Yy]$ ]]; then
             echo -e "${GREEN}Beginning set up.${ENDCOLOR}"
@@ -188,11 +189,11 @@ select_user() {
     else
         echo "User does not exist. Script cannot continue"
         echo "without a valid user. Would you like to create"
-        read -r -p "the user: $varname y/n: " createuser
+        read -r -p "the user: $user_name y/n: " createuser
         if [[ "$createuser" =~ ^[Yy]$ ]]; then
-            echo "Creating user $varname"
-            sudo useradd "$varname"
-            sudo passwd "$varname"
+            echo "Creating user $user_name"
+            sudo useradd "$user_name"
+            sudo passwd "$user_name"
             echo -e "${GREEN}Beginning set up.${ENDCOLOR}"
         else
             echo -e "${RED}Exiting script, rerun script with a valid username${ENDCOLOR}"
@@ -216,7 +217,7 @@ step_1_comment="--------------------------------------------
 step_1() {
     echo "$step_1_comment"
     echo "--------------------------------------------"
-    sudo usermod -aG wheel "$varname"
+    sudo usermod -aG wheel "$user_name"
     sudo dnf install epel-release -y
     sudo dnf update -y
     sudo dnf install make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano -y
@@ -383,96 +384,166 @@ step_3_comment="--------------------------------------------
 step_3() {
     echo "$step_3_comment"
     echo "--------------------------------------------"
-    
-    # Set SRV_LOCATION user environment variable
-    srvLocation=$(sudo -u $varname sed -n 's;^export SRV_LOCATION=\(.*\).*;\1;p' /home/$varname/.bashrc)
-    if [[ $srvLocation != "" ]] ; then
-        echo "User environment variable SRV_LOCATION already exists"
-        isConfigured=true
-    else
-        echo "---------------------------------------------------------------"
-        echo "SRV_LOCATION is not set. The default srv location is:"
-        echo "/srv/$varname"
-        echo -e "${RED}Note that if you set a custom srv location the folder you${ENDCOLOR}"
-        echo -e "${RED}specify should already exist${ENDCOLOR}"
-        echo "---------------------------------------------------------------"
-        srvLocation="/srv/$varname"
-        isConfigured=false
+
+    variables_location="/home/$user_name/.bashrc.d/server-variables"
+    system_paths=("SRV_LOCATION" "STORAGE_LOCATION")
+    default_srv_location="/srv/$user_name"
+    default_storage_location="/storage/$user_name"
+    srv_message="SRV_LOCATION is not set. The default srv location is:
+$default_srv_location
+${RED}Note that if you set a custom srv location the directory${ENDCOLOR}
+${RED}specified should already exist${ENDCOLOR}"
+    storage_message="STORAGE_LOCATION is not set. The default storage location is:
+$default_storage_location
+${RED}Note that the default storage location will install on the${ENDCOLOR}
+${RED}root of the OS drive. If you have a second hard drive you${ENDCOLOR}
+${RED}would like to use for storage make sure it is mounted and${ENDCOLOR}
+${RED}enter the absolute path to the folder. Example:${ENDCOLOR}
+/mnt/Second-Drive/$user_name"
+
+    bashrc_code="# User specific aliases and functions
+if [ -d ~/.bashrc.d ]; then
+	for rc in ~/.bashrc.d/*; do
+		if [ -f \"\$rc\" ]; then
+			. \"\$rc\"
+		fi
+	done
+fi"
+    server_info_comment="\# Alias used for server info"
+    server_info_code="function server-info() {
+echo \"Server configured on `date "+%Y/%m/%d"` by server-setup.sh version: $version\"
+echo \"SERVER-VARIABLES FILE LOCATION:\"
+echo \"$variables_location\"
+echo \"+=============================+============================================================\"
+echo -e \"| VARIABLE\\t| LOCATION\" | expand -t 30
+echo \"+=============================+============================================================\"
+for variable in \"\${system_paths[@]}\"; do
+    location=(\$(sed -n 's;^export '\"\$variable\"'=\(.*\).*;\1;p' test.txt))
+    echo -e \"| \$variable\t| \$location\" | expand -t 30
+    echo \"+-----------------------------+------------------------------------------------------------\"
+done
+}
+
+export -f server-info"
+
+    # Create .bashrc.d if it doesn't exist
+    if [ ! -d "/home/$user_name/.bashrc.d" ]; then
+        echo "Creating .bashrc.d folder"
+        sudo -u "$user_name" mkdir -p -- "/home/$user_name/.bashrc.d"
+        echo "Enable .bashrc.d server-variables file"
+        sudo -u "$user_name" echo "$bashrc_code" >> "/home/$user_name/.bashrc"
+        sudo -u "$user_name" touch $variables_location
     fi
 
-    isSrvCorrect="n"
-    while [[ ! "$isSrvCorrect" =~ ^[Yy]$ ]]; do
-        read -r -p "SRV_LOCATION=$srvLocation is this correct? y/n: " isSrvCorrect
-        if [[ "$isSrvCorrect" =~ ^[Nn]$ ]] ; then
-            read -r -p "srv Location: " srvLocation
+    # Read in all path variables from server-variables file if exists
+    if [ -f "$variables_location" ]; then
+        echo "Reading in location variables"
+        # Only import unique variable names
+        read_in=($(sed -n 's;^export \(.*\).*=\(.*\).*;\1;p' test.txt))
+        for entry in "${read_in[@]}"; do
+            is_variable_found=false
+            for variable in "${system_paths[@]}"; do
+                if [[ $entry == $variable ]] ; then
+                    is_variable_found=true
+                fi
+            done
+            if ! $is_variable_found; then
+                system_paths+=($entry)
+            fi
+        done
+    fi
+
+    # Set path variables
+    index=$((0))
+    while (( $index < ${#system_paths[@]} )); do
+        location=$(sudo -u $user_name sed -n 's;^export '"${system_paths[index]}"'=\(.*\).*;\1;p' $variables_location)
+        isConfigured=false
+        # Try to partition the statements so that the user can read the text for a
+        # given server variable.
+        echo "=================================================================="
+        echo -e "USER SERVER VARIABLE: ${GREEN}${system_paths[index]}${ENDCOLOR}"
+        echo "FOR USER $user_name"
+        echo "------------------------------------------------------------------"
+        if [[ $location != "" ]] ; then
+            isConfigured=true
+        elif [[ ${system_paths[index]} == "SRV_LOCATION" ]]
+            echo -e $srv_message
+            location=$default_srv_location
+        elif [[ ${system_paths[index]} == "STORAGE_LOCATION" ]]
+            echo -e $storage_message
+            location=$default_storage_location
         fi
+
+        echo "[a/A]: Accept current valriable location"
+        echo "[s/S]: Set variable location"
+        action="c"
+        while [[ ! "$action" =~ ^[Aa]$ ]]; do
+            if [[ $location == "" ]] ; then
+                echo "${system_paths[index]} has not been configured"
+            else
+                echo "${system_paths[index]}=$location"
+            fi
+            read -r -p "[a: accept, s: set/default=a]: " action
+            if [[ "$action" =~ ^[Ss]$ ]] ; then
+                read -r -p "${system_paths[index]}: " location
+            fi
+            if [[ "$action" == "" || "$action" =~ ^[Aa]$ ]] ; then
+                if [[ $location == "" ]] ; then
+                    echo -e "${RED}ERROR: VARIABLE DOES NOT HAVE A VALID LOCATION${ENDCOLOR}"
+                    action="c"
+                elif [[ "$location" == "$default_srv_location" || "$location" == "$default_storage_location" ]]; then
+                    # If we are using the default locations go ahead and create
+                    # the directories for the user
+                    echo "Make $location directory"
+                    sudo mkdir -p -- "$location"
+                elif [ ! -d "$location" ] ; then
+                    # Notify user that the selected directory does not exist
+                    # ask to create directory
+                    echo -e "${RED}WARNING LOCATION:${ENDCOLOR} $location"
+                    read -r -p "Does not exist. Create directory? [y/n]: " create_dir
+                    if [[ "$create_dir" =~ ^[Yy]$ ]]; then
+                        echo "Make $location directory"
+                        sudo mkdir -p -- "$location"
+                    fi
+                else
+                    action="a"
+                fi
+            fi
+        done
+
+        # Write changes to file
+        if $isConfigured; then
+            echo "Change ${system_paths[index]} to $location"
+            sudo -u "$user_name" sed -i 's;^export '"${system_paths[index]}"'=.*;export '"${system_paths[index]}"'='"$location"';' "$variables_location"
+        else
+            echo "Set ${system_paths[index]} to $location"
+            sudo -u "$user_name" echo "export ${system_paths[index]}=$location" >> "$variables_location"
+        fi
+
+        # Change directory ownership if directory is empty
+        if [ "$(ls -A $location)" ]; then
+            echo -e "${RED}$location is not empty do not change ownership.${ENDCOLOR}"
+        else
+            sudo chown -R "$user_name:$user_name" "$location"
+            echo "$location ownership changed to $user_name"
+        fi
+
+        # Add any additional user variables
+        if (( $index == (${#system_paths[@]} - 1) )); then
+            read -r -p "Would you like to add any additional variables? y/n: " isAddVariable
+            if [[ "$isAddVariable" =~ ^[Yy]$ ]]; then
+                read -r -p "Variable name: " variable_name
+                system_paths+=("$variable_name")
+            fi
+        fi
+        index=$((index + 1))
     done
 
-    if [ "$SRV_LOCATION" != "$srvLocation" ] && $isConfigured; then
-        sudo -u "$varname" sed -i 's;^export SRV_LOCATION=.*;export SRV_LOCATION='"$srvLocation"';' /home/"$varname"/.bashrc
-        echo "Change SRV_LOCATION to $srvLocation"
-    elif [[ $isConfigured = false ]]; then
-        echo "set SRV_LOCTION to $srvLocation"
-        sudo -u "$varname" echo "export SRV_LOCATION=$srvLocation" >> /home/$varname/.bashrc
-        echo "SRV_LOCTION set to $srvLocation"
-        if [[ "$srvLocation" == "/srv/$varname" ]]; then
-            echo "Make /srv/$varname directory"
-            sudo mkdir -p -- "/srv"
-            sudo mkdir -p -- "/srv/$varname"
-        fi
-    fi
-    if [ "$(ls -A $srvLocation)" ]; then
-        echo -e "${RED}$srvLocation is not empty do not change ownership.${ENDCOLOR}"
-    else
-        sudo chown -R "$varname:$varname" "$srvLocation"
-        echo "$srvLocation ownership changed to $varname"
-    fi
-
-    # Set STORAGE_LOCATION
-    storageLocation=$(sudo -u "$varname" sed -n 's;^export STORAGE_LOCATION=\(.*\).*;\1;p' /home/"$varname"/.bashrc)
-    if [[ $storageLocation != "" ]] ; then
-        echo "User environment variable STORAGE_LOCATION already exists"
-        isConfigured=true
-    else
-        echo "---------------------------------------------------------------"
-        echo "STORAGE_LOCATION is not set. The default storage location is:"
-        echo "/storage/$varname"
-        echo -e "${RED}Note that the default storage location will install on the${ENDCOLOR}"
-        echo -e "${RED}root of the OS drive. If you have a second hard drive you${ENDCOLOR}"
-        echo -e "${RED}would like to use for storage make sure it is mounted and${ENDCOLOR}"
-        echo -e "${RED}enter the absolute path to the folder. Example:${ENDCOLOR}"
-        echo "/mnt/Second-Drive/$varname"
-        echo "---------------------------------------------------------------"
-        storageLocation="/storage/$varname"
-        isConfigured=false
-    fi
-
-    isStorageCorrect="n"
-    while [[ ! "$isStorageCorrect" =~ ^[Yy]$ ]]; do
-        read -r -p "STORAGE_LOCATION=$storageLocation is this correct? y/n: " isStorageCorrect
-        if [[ "$isStorageCorrect" =~ ^[Nn]$ ]] ; then
-            read -r -p "storage Location: " storageLocation
-        fi
-    done
-
-    if [ "$STORAGE_LOCATION" != "$storageLocation" ] && $isConfigured; then
-        sudo -u "$varname" sed -i 's;^export STORAGE_LOCATION=.*;export STORAGE_LOCATION='"$storageLocation"';' /home/"$varname"/.bashrc
-        echo "Change STORAGE_LOCATION to $storageLocation"
-    elif [[ $isConfigured = false ]]; then
-        echo "set STORAGE_LOCATION to $storageLocation"
-        sudo -u "$varname" echo "export STORAGE_LOCATION=$storageLocation" >> /home/"$varname"/.bashrc
-        echo "STORAGE_LOCATION set to $storageLocation"
-        if [[ "$storageLocation" == "/storage/$varname" ]]; then
-            echo "Make /storage/$varname directory"
-            sudo mkdir -p -- "/storage"
-            sudo mkdir -p -- "/storage/$varname"
-        fi
-    fi
-    if [ "$(ls -A "$storageLocation")" ]; then
-        echo -en "${RED}$storageLocation is not empty do not change ownership.\n${ENDCOLOR}"
-    else
-        sudo chown -R "$varname:$varname" "$storageLocation"
-        echo "$storageLocation ownership changed to $varname"
+    # Write the server-info function to the alias file if it does
+    # not exist.
+    if ! grep "$server_info_comment" -q "$alias_location"; then
+        echo "$server_info_comment" >> "$alias_location"
+        echo "$server_info_code" >> "$alias_location"
     fi
 
     echo -en "${GREEN}Completed Step 3\n\n${ENDCOLOR}"
@@ -488,14 +559,12 @@ step_4_comment="--------------------------------------------
 step_4() {
     echo "$step_4_comment"
     echo "--------------------------------------------"
-    echo "Configure $varname user systemd folder"
+    echo "Configure $user_name user systemd folder"
 
-    sudo -u "$varname" mkdir -p -- "/home/$varname/.config"
-    sudo -u "$varname" mkdir -p -- "/home/$varname/.config/systemd"
-    sudo -u "$varname" mkdir -p -- "/home/$varname/.config/systemd/user"
+    sudo -u "$user_name" mkdir -p -- "/home/$user_name/.config/systemd/user"
 
     echo "Enable user systemd startup and persist settings"
-    sudo loginctl enable-linger "$varname"
+    sudo loginctl enable-linger "$user_name"
     echo "Enable fuse-overlay file system for use with rootless podman"
     sudo sed -i 's/#mount_program = "\/usr\/bin\/fuse-overlayfs"/mount_program = "\/usr\/bin\/fuse-overlayfs"/' /etc/containers/storage.conf
     echo "Enable rootless podman storage path: ~/.local/share/containers/storage"
@@ -514,8 +583,8 @@ step_5() {
     echo "$step_5_comment"
     echo "--------------------------------------------"
     currentUser=$(whoami)
-    if [[ "$currentUser" != "$varname" ]]; then
-        echo -en "${RED}You need to be logged in as $varname\n${ENDCOLOR}"
+    if [[ "$currentUser" != "$user_name" ]]; then
+        echo -en "${RED}You need to be logged in as $user_name\n${ENDCOLOR}"
         echo -en "${RED}in order to configure pass.\n${ENDCOLOR}"
         echo -en "${RED}Skipping Step 5\n\n${ENDCOLOR}"
     else
@@ -584,13 +653,13 @@ step_6() {
     echo "--------------------------------------------"
     echo "Configure folder structure for automatic"
     echo "container updates and backups."
-    sudo -u "$varname" mkdir -p -- "/home/$varname/backups"
-    sudo -u "$varname" mkdir -p -- "/home/$varname/backups/service"
-    sudo -u "$varname" mkdir -p -- "/home/$varname/backups/scripts"
+    sudo -u "$user_name" mkdir -p -- "/home/$user_name/backups"
+    sudo -u "$user_name" mkdir -p -- "/home/$user_name/backups/service"
+    sudo -u "$user_name" mkdir -p -- "/home/$user_name/backups/scripts"
 
-    backupScriptLocation="/home/$varname/backups/service/update-backup-main.sh"
-    updateServiceLocation="/home/$varname/.config/systemd/user/container-update.service"
-    updateTimerLocation="/home/$varname/.config/systemd/user/container-update.timer"
+    backupScriptLocation="/home/$user_name/backups/service/update-backup-main.sh"
+    updateServiceLocation="/home/$user_name/.config/systemd/user/container-update.service"
+    updateTimerLocation="/home/$user_name/.config/systemd/user/container-update.timer"
     if [ -f "$backupScriptLocation" ]; then
         echo "Notice: $backupScriptLocation file exists"
         echo "======"
@@ -599,9 +668,9 @@ step_6() {
         echo "======"
     else
         echo "Create update-backup-main.sh to run backup scripts"
-        sudo -u "$varname" echo "$autoUpdateBackupScript" >> "$backupScriptLocation"
+        sudo -u "$user_name" echo "$autoUpdateBackupScript" >> "$backupScriptLocation"
         sudo chmod +x "$backupScriptLocation"
-        sudo chown $varname:$varname $backupScriptLocation
+        sudo chown $user_name:$user_name $backupScriptLocation
     fi
 
     if [ -f "$updateServiceLocation" ]; then
@@ -616,14 +685,14 @@ Description=Auto backup and update Podman containers
 After=network.target
 
 [Service]
-WorkingDirectory=/home/$varname/backups/service/
+WorkingDirectory=/home/$user_name/backups/service/
 Type=oneshot
 ExecStart=/bin/bash $backupScriptLocation
 
 [Install]
 WantedBy=multi-user.target"
         echo "Create container-update.service for systemD"
-        sudo -u "$varname" echo "$serviceD" >> "$updateServiceLocation"
+        sudo -u "$user_name" echo "$serviceD" >> "$updateServiceLocation"
     fi
 
     if [ -f "$updateTimerLocation" ]; then
@@ -642,7 +711,7 @@ OnCalendar=Wed *-*-1..7 2:00:00
 [Install]
 WantedBy=multi-user.target"
         echo "Create container-update.timer for systemD"
-        sudo -u "$varname" echo "$timerD" >> "$updateTimerLocation"
+        sudo -u "$user_name" echo "$timerD" >> "$updateTimerLocation"
     fi
     echo -en "${GREEN}Completed step 6\n${ENDCOLOR}"
 }
@@ -661,11 +730,11 @@ step_7_comment="--------------------------------------------
 step_7() {
     echo "$step_7_comment"
     echo "--------------------------------------------"
-    makefileLocation="/home/$varname/Makefile"
+    makefileLocation="/home/$user_name/Makefile"
 
     echo "Making containers directory at:"
-    echo "/home/$varname/containers"
-    sudo -u "$varname" mkdir -p -- "/home/$varname/containers"
+    echo "/home/$user_name/containers"
+    sudo -u "$user_name" mkdir -p -- "/home/$user_name/containers"
     if [ -f "$makefileLocation" ]; then
         echo "Notice: $makefileLocation file exists"
         echo "======"
@@ -688,7 +757,7 @@ step_7() {
 ########################################
 step_8_comment="--------------------------------------------
 [OPTIONAL]
-     8: Add lsper alias to .bashrc"
+     8: Add lsper alias to .local directory"
 step_8() {
     echo "$step_8_comment"
     echo "--------------------------------------------"
@@ -699,18 +768,18 @@ step_8() {
     echo "columns mean."
     read -r -p "Install lsper alias? y/n: " isLsper
     if [[ "$isLsper" =~ ^[Yy]$ ]]; then
-        lsPerLocation="/home/$varname/.local/lsper/permissions.txt"
-        sudo -u "$varname" mkdir -p -- "/home/$varname/.local"
-        sudo -u "$varname" mkdir -p -- "/home/$varname/.local/lsper"
+        lsPerLocation="/home/$user_name/.local/c-4422/permissions.txt"
+        sudo -u "$user_name" mkdir -p -- "/home/$user_name/.local"
+        sudo -u "$user_name" mkdir -p -- "/home/$user_name/.local/c-4422"
         if [ -f "$lsPerLocation" ]; then
-            sudo -u "$varname" rm "$lsPerLocation"
+            sudo -u "$user_name" rm "$lsPerLocation"
         fi
-        sudo -u "$varname" echo "$lsPerCommand" >> "$lsPerLocation"
+        sudo -u "$user_name" echo "$lsPerCommand" >> "$lsPerLocation"
 
         for i in "${lrAlias[@]}"
         do
-            if ! grep "$i" -q /home/$varname/.bashrc; then
-                echo "$i" >> /home/$varname/.bashrc
+            if ! grep "$i" -q "$alias_location"; then
+                echo "$i" >> "$alias_location"
             fi
         done
         echo "Successfully installed lsper alias"
