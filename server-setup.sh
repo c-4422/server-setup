@@ -66,7 +66,7 @@ if [ \"\$(ls -A ~/.server/scripts)\" ]; then
 fi
 podman auto-update"
 
-lsPerCommand="-rw-r--r-- 12 linuxize users 12.0K Apr  28 10:10 file_name
+lsper_command="-rw-r--r-- 12 linuxize users 12.0K Apr  28 10:10 file_name
 |[-][-][-]-   [------] [---]
 | |  |  | |      |       |
 | |  |  | |      |       +-----------> 7. Group
@@ -756,24 +756,23 @@ step_7() {
 ########################################
 step_8_comment="--------------------------------------------
 [OPTIONAL]
-     8: Add lsper alias to .local directory"
+     8: Add lsper alias to .server directory"
 step_8() {
     echo "$step_8_comment"
     echo "--------------------------------------------"
-    echo "Adding command lsper to .bashrc, this is not"
+    echo "Adding command lsper to server aliases, this is not"
     echo "crucial to system function. lsper stands for"
     echo "list permissions. The idea is that after ls -al"
     echo "you can types lsper which will tell you what the"
     echo "columns mean."
-    read -r -p "Install lsper alias? y/n: " isLsper
-    if [[ "$isLsper" =~ ^[Yy]$ ]]; then
-        lsPerLocation="/home/$user_name/.local/c-4422/permissions.txt"
-        sudo -u "$user_name" mkdir -p -- "/home/$user_name/.local"
-        sudo -u "$user_name" mkdir -p -- "/home/$user_name/.local/c-4422"
-        if [ -f "$lsPerLocation" ]; then
-            sudo -u "$user_name" rm "$lsPerLocation"
+    read -r -p "Install lsper alias? y/n: " is_lsper
+    if [[ "$is_lsper" =~ ^[Yy]$ ]]; then
+        lsper_location="/home/$user_name/.server/c-4422/permissions.txt"
+        sudo -u "$user_name" mkdir -p -- "/home/$user_name/.server/c-4422"
+        if [ -f "$lsper_location" ]; then
+            sudo -u "$user_name" rm "$lsper_location"
         fi
-        sudo -u "$user_name" echo "$lsPerCommand" >> "$lsPerLocation"
+        sudo -u "$user_name" echo "$lsper_command" >> "$lsper_location"
 
         for i in "${lrAlias[@]}"
         do
