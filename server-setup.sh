@@ -396,14 +396,14 @@ step_3() {
     srv_message="SRV_LOCATION is not set. The default srv location is:\n
 $default_srv_location\n
 ${RED}Note that if you set a custom srv location the directory${ENDCOLOR}\n
-${RED}specified should already exist${ENDCOLOR}\n"
+${RED}specified should already exist${ENDCOLOR}"
     storage_message="STORAGE_LOCATION is not set. The default storage location is:\n
 $default_storage_location\n
 ${RED}Note that the default storage location will install on the${ENDCOLOR}\n
 ${RED}root of the OS drive. If you have a second hard drive you${ENDCOLOR}\n
 ${RED}would like to use for storage make sure it is mounted and${ENDCOLOR}\n
 ${RED}enter the absolute path to the folder. Example:${ENDCOLOR}\n
-/mnt/Second-Drive/$user_name\n"
+/mnt/Second-Drive/$user_name"
 
     bashrc_code="# User specific aliases and functions
 if [ -d ~/.bashrc.d ]; then
@@ -418,7 +418,7 @@ fi"
 echo \"Server configured on `date "+%Y/%m/%d"` by server-setup.sh version: $version\"
 echo \"SERVER-VARIABLES FILE LOCATION:\"
 echo \"$variables_location\"
-system_paths=(\$(sed -n 's;^export \(.*\).*=\(.*\).*;\1;p' \$variables_location))
+system_paths=(\$(sed -n 's;^export \(.*\).*=\(.*\).*;\1;p' $variables_location))
 echo \"+=============================+============================================================\"
 echo -e \"| VARIABLE\\t| LOCATION\" | expand -t 30
 echo \"+=============================+============================================================\"
