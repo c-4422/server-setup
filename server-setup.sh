@@ -202,6 +202,9 @@ select_user() {
             exit 1
         fi
     fi
+
+    # Set the alias location now that the username has been entered
+    alias_location="/home/$user_name/.bashrc.d/server-aliases"
 }
 
 
@@ -390,17 +393,17 @@ step_3() {
     system_paths=("SRV_LOCATION" "STORAGE_LOCATION")
     default_srv_location="/srv/$user_name"
     default_storage_location="/storage/$user_name"
-    srv_message="SRV_LOCATION is not set. The default srv location is:
-$default_srv_location
-${RED}Note that if you set a custom srv location the directory${ENDCOLOR}
-${RED}specified should already exist${ENDCOLOR}"
-    storage_message="STORAGE_LOCATION is not set. The default storage location is:
-$default_storage_location
-${RED}Note that the default storage location will install on the${ENDCOLOR}
-${RED}root of the OS drive. If you have a second hard drive you${ENDCOLOR}
-${RED}would like to use for storage make sure it is mounted and${ENDCOLOR}
-${RED}enter the absolute path to the folder. Example:${ENDCOLOR}
-/mnt/Second-Drive/$user_name"
+    srv_message="SRV_LOCATION is not set. The default srv location is:\n
+$default_srv_location\n
+${RED}Note that if you set a custom srv location the directory${ENDCOLOR}\n
+${RED}specified should already exist${ENDCOLOR}\n"
+    storage_message="STORAGE_LOCATION is not set. The default storage location is:\n
+$default_storage_location\n
+${RED}Note that the default storage location will install on the${ENDCOLOR}\n
+${RED}root of the OS drive. If you have a second hard drive you${ENDCOLOR}\n
+${RED}would like to use for storage make sure it is mounted and${ENDCOLOR}\n
+${RED}enter the absolute path to the folder. Example:${ENDCOLOR}\n
+/mnt/Second-Drive/$user_name\n"
 
     bashrc_code="# User specific aliases and functions
 if [ -d ~/.bashrc.d ]; then
@@ -419,7 +422,7 @@ echo \"+=============================+==========================================
 echo -e \"| VARIABLE\\t| LOCATION\" | expand -t 30
 echo \"+=============================+============================================================\"
 for variable in \"\${system_paths[@]}\"; do
-    location=(\$(sed -n 's;^export '\"\$variable\"'=\(.*\).*;\1;p' test.txt))
+    location=(\$(sed -n 's;^export '\"\$variable\"'=\(.*\).*;\1;p' $variables_location))
     echo -e \"| \$variable\t| \$location\" | expand -t 30
     echo \"+-----------------------------+------------------------------------------------------------\"
 done
@@ -440,7 +443,7 @@ export -f server-info"
     if [ -f "$variables_location" ]; then
         echo "Reading in location variables"
         # Only import unique variable names
-        read_in=($(sed -n 's;^export \(.*\).*=\(.*\).*;\1;p' test.txt))
+        read_in=($(sed -n 's;^export \(.*\).*=\(.*\).*;\1;p' $variables_location))
         for entry in "${read_in[@]}"; do
             is_variable_found=false
             for variable in "${system_paths[@]}"; do
@@ -467,16 +470,14 @@ export -f server-info"
         echo "------------------------------------------------------------------"
         if [[ $location != "" ]] ; then
             isConfigured=true
-        elif [[ ${system_paths[index]} == "SRV_LOCATION" ]]
+        elif [[ ${system_paths[index]} == "SRV_LOCATION" ]] ; then
             echo -e $srv_message
             location=$default_srv_location
-        elif [[ ${system_paths[index]} == "STORAGE_LOCATION" ]]
+        elif [[ ${system_paths[index]} == "STORAGE_LOCATION" ]] ; then
             echo -e $storage_message
             location=$default_storage_location
         fi
 
-        echo "[a/A]: Accept current valriable location"
-        echo "[s/S]: Set variable location"
         action="c"
         while [[ ! "$action" =~ ^[Aa]$ ]]; do
             if [[ $location == "" ]] ; then
@@ -484,7 +485,7 @@ export -f server-info"
             else
                 echo "${system_paths[index]}=$location"
             fi
-            read -r -p "[a: accept, s: set/default=a]: " action
+	    read -r -p "[a: accept, s: set (default=a)]: " action
             if [[ "$action" =~ ^[Ss]$ ]] ; then
                 read -r -p "${system_paths[index]}: " location
             fi
