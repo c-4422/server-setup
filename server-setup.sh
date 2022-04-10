@@ -413,11 +413,12 @@ if [ -d ~/.bashrc.d ]; then
 		fi
 	done
 fi"
-    server_info_comment="\# Alias used for server info"
+    server_info_comment="# Alias used for server info"
     server_info_code="function server-info() {
 echo \"Server configured on `date "+%Y/%m/%d"` by server-setup.sh version: $version\"
 echo \"SERVER-VARIABLES FILE LOCATION:\"
 echo \"$variables_location\"
+system_paths=(\$(sed -n 's;^export \(.*\).*=\(.*\).*;\1;p' \$variables_location))
 echo \"+=============================+============================================================\"
 echo -e \"| VARIABLE\\t| LOCATION\" | expand -t 30
 echo \"+=============================+============================================================\"
