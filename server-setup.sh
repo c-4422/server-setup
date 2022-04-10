@@ -461,7 +461,10 @@ export -f server-info"
     # Set path variables
     index=$((0))
     while (( $index < ${#system_paths[@]} )); do
-        location=$(sudo -u $user_name sed -n 's;^export '"${system_paths[index]}"'=\(.*\).*;\1;p' $variables_location)
+        location=""
+        if [ -f "$variables_location" ]; then
+            location=$(sudo -u $user_name sed -n 's;^export '"${system_paths[index]}"'=\(.*\).*;\1;p' $variables_location)
+        fi
         isConfigured=false
         # Try to partition the statements so that the user can read the text for a
         # given server variable.
