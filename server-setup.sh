@@ -44,21 +44,22 @@ ENDCOLOR="\\x1b[0m"
 
 autoUpdateBackupScript="#!/bin/bash
 ################################################
-# v1.0.0
-# Automatic Update and Backup Script
+# v1.0.1
+# Automatic application update and backup Script
 # Auto-generated from server-setup.sh script
 # by C-4422
 #
 # This script by default is called on the first
 # Wednesday of every month by SystemD
 #
-# Call all scripts found in the .server/scripts
-# folder and then call podman auto-update
+# Call all scripts found in the 
+# .server/applications directory and then call 
+# podman auto-update
 ################################################
 set -eo pipefail
 count=0
-if [ \"\$(ls -A ~/.server/scripts)\" ]; then
-    for f in ~/.server/scripts/*.sh; do
+if [ \"\$(ls -A ~/.server/applications)\" ]; then
+    for f in ~/.server/applications/*.sh; do
         let \"count+=1\"
         echo \"Step \$count. Entering script \$f\"
         bash \"\$f\"
@@ -602,8 +603,10 @@ step_5() {
         else
             echo "Configure pass? A basic password manager used"
             echo "to load in passwords for podman applications"
-            echo "C-4422 has configured."
-            read -r -p "HINT: you should set this up. Configure Pass? y/n: " isPass
+            echo "C-4422 has configured. If you have already"
+            echo "configured pass or you do not want to use it"
+            echo "enter N/n"
+            read -r -p "Configure Pass? y/n: " isPass
             if [[ "$isPass" =~ ^[Yy]$ ]]; then
                 gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
                 if [ "$gpgKey" == "" ]; then
@@ -619,16 +622,11 @@ step_5() {
                     gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
                 fi
                 gpg --list-secret-keys --keyid-format LONG
-                gpgKey=$(printf "%.21s" "${gpgKey#*rsa}")
-                gpgKey=$(printf "%.16s" "${gpgKey#*\/}")
-                read -r -p "Is the following key correct: $gpgKey: y/n: " isCorrect
-                if [[ "$isCorrect" =~ ^[Nn]$ ]]; then
-                    gpgKey=""
-                fi
+                read -r -p "Enter gpg KeyID: " gpgKey
                 while ! pass init "$gpgKey" ; do
                     echo "Key ID incorrect enter correct key"
                     gpg --list-secret-keys --keyid-format LONG
-                    read -r -p "KeyID = " gpgKey 
+                    read -r -p "Enter gpg KeyID: " gpgKey
                 done
             else
                 echo "Skipping pass configuration, you can always"
@@ -654,7 +652,8 @@ step_6() {
     echo "Configure folder structure for automatic"
     echo "container updates and backups."
     sudo -u "$user_name" mkdir -p -- "/home/$user_name/.server/service"
-    sudo -u "$user_name" mkdir -p -- "/home/$user_name/.server/scripts"
+    sudo -u "$user_name" mkdir -p -- "/home/$user_name/.server/applications"
+    sudo -u "$user_name" mkdir -p -- "/home/$user_name/.server/incremental"
 
     backup_script_location="/home/$user_name/.server/service/update-backup-main.sh"
     update_service_location="/home/$user_name/.config/systemd/user/container-update.service"
