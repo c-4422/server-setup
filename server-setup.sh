@@ -216,6 +216,9 @@ apt_install() {
     sudo apt update
     sudo apt upgrade -y
     sudo apt install -y make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano
+    if ! sudo apt install -y pass; then
+        echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
+    fi
 }
 
 ########################################
@@ -542,7 +545,7 @@ export -f server-info"
 
         # Write changes to file
         if $isConfigured; then
-            echo "Change ${system_paths[index]} to $location"
+            echo "${system_paths[index]}=$location"
             sudo -u "$user_name" sed -i 's;^export '"${system_paths[index]}"'=.*;export '"${system_paths[index]}"'='"$location"';' "$variables_location"
         else
             echo "Set ${system_paths[index]} to $location"
@@ -774,7 +777,8 @@ step_7() {
         echo "changed. This is done to preserve user settings."
         echo "======"
     else
-        read -r -p "HINT: you should download this file if you don't have it. Download master Makefile? y/n: " isDownload
+        echo "HINT: you should download this file if you don't have it."
+        read -r -p "Download master Makefile? y/n: " isDownload
         if [[ "$isDownload" =~ ^[Yy]$ ]]; then
             curl -o "$makefileLocation" https://raw.githubusercontent.com/c-4422/app-configs/main/Makefile
         fi
