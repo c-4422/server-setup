@@ -79,7 +79,7 @@ lsper_command="-rw-r--r-- 12 linuxize users 12.0K Apr  28 10:10 file_name
 +------------------------------------> 1. File Type"
 
 lrAlias=("# Alias's created by C-4422 Setup Script"
-"alias lsper='cat ~/.local/lsper/permissions.txt'")
+"alias lsper='cat ~/.server/c-4422/permissions.txt'")
 alias_location="/home/$user_name/.bashrc.d/server-aliases"
 
 ########################################
@@ -207,6 +207,28 @@ select_user() {
     alias_location="/home/$user_name/.bashrc.d/server-aliases"
 }
 
+########################################
+# FUNCTION
+#   Install and configure for apt
+########################################
+apt_install() {
+    sudo usermod -aG sudo "$user_name"
+    sudo apt install -y make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano
+}
+
+########################################
+# FUNCTION
+#   Install and configure for dnf
+########################################
+dnf_install() {
+    sudo usermod -aG wheel "$user_name"
+    sudo dnf install epel-release -y
+    sudo dnf update -y
+    sudo dnf install make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano -y
+    if ! sudo dnf install pass -y; then
+        echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
+    fi
+}
 
 ########################################
 # FUNCTION
@@ -221,12 +243,10 @@ step_1_comment="--------------------------------------------
 step_1() {
     echo "$step_1_comment"
     echo "--------------------------------------------"
-    sudo usermod -aG wheel "$user_name"
-    sudo dnf install epel-release -y
-    sudo dnf update -y
-    sudo dnf install make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano -y
-    if ! sudo dnf install pass -y; then
-        echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
+    if [ -x "$(command -v dnf)" ]; then
+        dnf_install
+    elif [ -x "$(command -v apt)" ]; then
+        apt_install
     fi
     echo "Enable cockpit service"
     sudo systemctl enable cockpit.socket
