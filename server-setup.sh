@@ -254,8 +254,9 @@ step_1() {
     sudo systemctl enable cockpit.socket
     sudo systemctl start cockpit.socket
 
-    echo "Confirm wheel is in sudo group"
+    echo "Confirm sudo is enabled"
     sudo sed -i 's/# %wheel  ALL=(ALL)       ALL/%wheel  ALL=(ALL)       ALL/' /etc/sudoers
+    sudo sed -i 's/# %sudo	ALL=(ALL:ALL) ALL/%sudo	ALL=(ALL:ALL) ALL/' /etc/sudoers
     echo "Enable fail2ban service"
     sudo systemctl enable fail2ban
     sudo systemctl start fail2ban
@@ -508,7 +509,7 @@ export -f server-info"
         echo "+=============================+==================================="
         echo -e "| VARIABLE\t| LOCATION" | expand -t 30
         echo "+=============================+==================================="
-        echo -e "${system_paths[index]}\t|$variable_config_message $location" | expand -t 30
+        echo -e "| ${system_paths[index]}\t|$variable_config_message $location" | expand -t 30
         echo "------------------------------+-----------------------------------"
         action="n"
         while [[ ! "$action" =~ ^[Yy]$ ]]; do
@@ -585,6 +586,8 @@ step_4_comment="--------------------------------------------
      4: Configure systemd user settings,
         configure podman to use fuse-fs."
 step_4() {
+    storage_conf_location="/etc/containers/storage.conf"
+
     echo "$step_4_comment"
     echo "--------------------------------------------"
     echo "Configure $user_name user systemd folder"
@@ -593,10 +596,14 @@ step_4() {
 
     echo "Enable user systemd startup and persist settings"
     sudo loginctl enable-linger "$user_name"
-    echo "Enable fuse-overlay file system for use with rootless podman"
-    sudo sed -i 's/#mount_program = "\/usr\/bin\/fuse-overlayfs"/mount_program = "\/usr\/bin\/fuse-overlayfs"/' /etc/containers/storage.conf
-    echo "Enable rootless podman storage path: ~/.local/share/containers/storage"
-    sudo sed -i '/rootless_storage_path/c\rootless_storage_path = "$HOME\/.local\/share\/containers\/storage"' /etc/containers/storage.conf
+    
+    # Check to see if the 
+    if [ -f "$storage_conf_location" ]; then
+        echo "Enable fuse-overlay file system for use with rootless podman"
+        sudo sed -i 's/#mount_program = "\/usr\/bin\/fuse-overlayfs"/mount_program = "\/usr\/bin\/fuse-overlayfs"/' "$storage_conf_location"
+        echo "Enable rootless podman storage path: ~/.local/share/containers/storage"
+        sudo sed -i '/rootless_storage_path/c\rootless_storage_path = "$HOME\/.local\/share\/containers\/storage"' "$storage_conf_location"
+    fi
 
     echo -en "${GREEN}Completed Step 4\n\n${ENDCOLOR}"
 }
