@@ -213,6 +213,8 @@ select_user() {
 ########################################
 apt_install() {
     sudo usermod -aG sudo "$user_name"
+    sudo apt update
+    sudo apt upgrade -y
     sudo apt install -y make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano
 }
 
@@ -439,13 +441,13 @@ echo \"Server configured on `date "+%Y/%m/%d"` by server-setup.sh version: $vers
 echo \"SERVER-VARIABLES FILE LOCATION:\"
 echo \"$variables_location\"
 system_paths=(\$(sed -n 's;^export \(.*\).*=\(.*\).*;\1;p' $variables_location))
-echo \"+=============================+============================================================\"
+echo \"+=============================+===================================\"
 echo -e \"| VARIABLE\\t| LOCATION\" | expand -t 30
-echo \"+=============================+============================================================\"
+echo \"+=============================+===================================\"
 for variable in \"\${system_paths[@]}\"; do
     location=(\$(sed -n 's;^export '\"\$variable\"'=\(.*\).*;\1;p' $variables_location))
     echo -e \"| \$variable\t| \$location\" | expand -t 30
-    echo \"+-----------------------------+------------------------------------------------------------\"
+    echo \"+-----------------------------+-----------------------------------\"
 done
 }
 
@@ -488,10 +490,6 @@ export -f server-info"
         isConfigured=false
         # Try to partition the statements so that the user can read the text for a
         # given server variable.
-        echo "=================================================================="
-        echo -e "USER SERVER VARIABLE: ${GREEN}${system_paths[index]}${ENDCOLOR}"
-        echo "FOR USER $user_name"
-        echo "------------------------------------------------------------------"
         if [[ $location != "" ]] ; then
             isConfigured=true
         elif [[ ${system_paths[index]} == "SRV_LOCATION" ]] ; then
@@ -502,21 +500,26 @@ export -f server-info"
             location=$default_storage_location
         fi
 
-        action="c"
-        while [[ ! "$action" =~ ^[Aa]$ ]]; do
-            if [[ $location == "" ]] ; then
-                echo "${system_paths[index]} has not been configured"
-            else
-                echo "${system_paths[index]}=$location"
+        variable_config_message=""
+        if $isConfigured; then
+            variable_config_message="${RED}[NOT SET]${ENDCOLOR}"
+        fi
+
+        echo -e "| VARIABLE\t| LOCATION" | expand -t 30
+        echo "+=============================+==================================="
+        echo -e "${system_paths[index]}\t|$variable_config_message $location" | expand -t 30
+        echo "------------------------------+-----------------------------------"
+        action="y"
+        while [[ ! "$action" =~ ^[Yy]$ ]]; do
+            if [[ $location != "" ]] ; then
+	            read -r -p "Variable location correct? y/n: " action
+            elif [[ $location != "" || "$action" =~ ^[Nn]$ ]] ; then
+                read -r -p "Set ${system_paths[index]} location: " location
             fi
-	    read -r -p "[a: accept, s: set (default=a)]: " action
-            if [[ "$action" =~ ^[Ss]$ ]] ; then
-                read -r -p "${system_paths[index]}: " location
-            fi
-            if [[ "$action" == "" || "$action" =~ ^[Aa]$ ]] ; then
+            if [[ "$action" == "" || "$action" =~ ^[Yy]$ ]] ; then
                 if [[ $location == "" ]] ; then
                     echo -e "${RED}ERROR: VARIABLE DOES NOT HAVE A VALID LOCATION${ENDCOLOR}"
-                    action="c"
+                    action="n"
                 elif [[ "$location" == "$default_srv_location" || "$location" == "$default_storage_location" ]]; then
                     # If we are using the default locations go ahead and create
                     # the directories for the user
@@ -531,8 +534,6 @@ export -f server-info"
                         echo "Make $location directory"
                         sudo mkdir -p -- "$location"
                     fi
-                else
-                    action="a"
                 fi
             fi
         done
