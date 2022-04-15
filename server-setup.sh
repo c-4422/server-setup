@@ -501,15 +501,16 @@ export -f server-info"
         fi
 
         variable_config_message=""
-        if $isConfigured; then
+        if ! $isConfigured; then
             variable_config_message="${RED}[NOT SET]${ENDCOLOR}"
         fi
 
+        echo "+=============================+==================================="
         echo -e "| VARIABLE\t| LOCATION" | expand -t 30
         echo "+=============================+==================================="
         echo -e "${system_paths[index]}\t|$variable_config_message $location" | expand -t 30
         echo "------------------------------+-----------------------------------"
-        action="y"
+        action="n"
         while [[ ! "$action" =~ ^[Yy]$ ]]; do
             if [[ $location != "" ]] ; then
 	            read -r -p "Variable location correct? y/n: " action
