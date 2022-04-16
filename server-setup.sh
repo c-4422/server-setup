@@ -7,6 +7,8 @@
 # 9b6b87bf3d3f44de936e7283ce4e555402feb741a005dfdc70cbbe2f08581911
 # 353b5bd8ab63aa7d4f15f462ef001d7b12f1abd6d32b9f9751ef7d9df9b3462a
 #
+# Script is supported on dnf and apt based distros.
+#
 # The purpose of this script is for ease of use when setting up
 # your own home server. Primary functions include:
 # - Modify or create a user intended for running rootless podman
@@ -15,8 +17,10 @@
 #   other software intended for ease of use like cockpit.
 # - Set kernel parmaters for rootless and possibly additional 
 #   security
-# - Set up podman to use fuse-fs for rootless containers
+# - Set up podman to use fuse-fs for rootless containers if 
+#   available
 # - Set up locations for container persistent storage
+# - Set up structure for backups
 # - Possibly set up pass password manager for management of
 #   contianer passwords
 # - Possibly add an alias lsper which lists la -al permission
@@ -215,7 +219,7 @@ apt_install() {
     sudo usermod -aG sudo "$user_name"
     sudo apt update
     sudo apt upgrade -y
-    sudo apt install -y make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano
+    sudo apt install -y make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano firewalld unattended-upgrades apt-listchanges
     if ! sudo apt install -y pass; then
         echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
     fi
@@ -229,7 +233,7 @@ dnf_install() {
     sudo usermod -aG wheel "$user_name"
     sudo dnf install epel-release -y
     sudo dnf update -y
-    sudo dnf install make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano -y
+    sudo dnf install make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano firewalld -y
     if ! sudo dnf install pass -y; then
         echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
     fi
@@ -254,6 +258,8 @@ step_1() {
         apt_install
     fi
     echo "Enable cockpit service"
+    sudo firewall-cmd --add-service="cockpit" --permanent
+    sudo firewall-cmd --reload
     sudo systemctl enable cockpit.socket
     sudo systemctl start cockpit.socket
 
@@ -400,6 +406,13 @@ net.ipv4.ip_unprivileged_port_start=80
     *)
         ;;
     esac
+
+    echo "Make sure network manager is managing the primary interface"
+    interface_file="/etc/network/interfaces"
+    if [ -f "$interface_file" ]; then
+        sudo sed -i 's/allow/#&/g' /etc/network/interfaces
+        sudo sed -i 's/iface.*inet dhcp/#&/g' /etc/network/interfaces
+    fi
 
     echo -en "${GREEN}Completed Step 2\n\n${ENDCOLOR}"
 }
@@ -642,7 +655,6 @@ step_5() {
             echo "to load in passwords for podman applications"
             echo "C-4422 has configured. If you have already"
             echo "configured pass or you do not want to use it"
-            echo "enter N/n"
             read -r -p "Configure Pass? y/n: " isPass
             if [[ "$isPass" =~ ^[Yy]$ ]]; then
                 gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
