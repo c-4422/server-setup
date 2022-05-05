@@ -217,9 +217,11 @@ select_user() {
 ########################################
 apt_install() {
     sudo usermod -aG sudo "$user_name"
+    echo "deb http://deb.debian.org/debian ${VERSION_CODENAME}-backports main" | sudo tee "/etc/apt/sources.list.d/backports.list"
     sudo apt update
     sudo apt upgrade -y
-    sudo apt install -y make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano firewalld unattended-upgrades apt-listchanges
+    sudo apt install -t ${VERSION_CODENAME}-backports cockpit cockpit-storaged cockpit-podman
+    sudo apt install -y make crun podman fail2ban dialog gpg sed nano firewalld unattended-upgrades apt-listchanges
     if ! sudo apt install -y pass; then
         echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
     fi
