@@ -84,6 +84,7 @@ lsper_command="-rw-r--r-- 12 linuxize users 12.0K Apr  28 10:10 file_name
 
 lrAlias=("# Alias's created by C-4422 Setup Script"
 "alias lsper='cat ~/.server/c-4422/permissions.txt'")
+variables_location="/home/$user_name/.bashrc.d/server-variables"
 alias_location="/home/$user_name/.bashrc.d/server-aliases"
 
 ########################################
@@ -217,13 +218,26 @@ select_user() {
 ########################################
 apt_install() {
     sudo usermod -aG sudo "$user_name"
-    echo "deb http://deb.debian.org/debian ${VERSION_CODENAME}-backports main" | sudo tee "/etc/apt/sources.list.d/backports.list"
     sudo apt update
     sudo apt upgrade -y
-    sudo apt install -t ${VERSION_CODENAME}-backports cockpit cockpit-storaged cockpit-podman
-    sudo apt install -y make crun podman fail2ban dialog gpg sed nano firewalld unattended-upgrades apt-listchanges
-    if ! sudo apt install -y pass; then
-        echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
+    sudo apt install -y make crun podman fail2ban dialog gpg sed nano firewalld unattended-upgrades apt-listchanges curl lsb-release \
+    btrfs-progs libbtrfs-dev runc uidmap
+    
+    distrobution=$(lsb_release -is)
+    if [[ "$distrobution" == "Debian" ]]; then
+        code_name=$(lsb_release -cs)
+        echo "deb http://deb.debian.org/debian $code_name-backports main" | sudo tee "/etc/apt/sources.list.d/backports.list"
+        sudo apt update
+        sudo apt install -t $code_name-backports cockpit cockpit-storaged cockpit-podman -y
+    else
+        sudo apt install -y cockpit cockpit-storaged cockpit-podman
+    fi
+    
+    read -r -p "Install pass password manager? Y/n: " is_pass_password
+    if [[ ! "$is_pass_password" =~ ^[Nn]$ ]]; then
+        if ! sudo apt install -y pass; then
+            echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
+        fi
     fi
 }
 
@@ -235,9 +249,12 @@ dnf_install() {
     sudo usermod -aG wheel "$user_name"
     sudo dnf install epel-release -y
     sudo dnf update -y
-    sudo dnf install make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano firewalld -y
-    if ! sudo dnf install pass -y; then
-        echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
+    sudo dnf install make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano firewalld curl redhat-lsb-core -y
+    read -r -p "Install pass password manager? Y/n: " is_pass_password
+    if [[ ! "$is_pass_password" =~ ^[Nn]$ ]]; then
+        if ! sudo dnf install pass -y; then
+            echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
+        fi
     fi
 }
 
@@ -430,21 +447,10 @@ step_3() {
     echo "$step_3_comment"
     echo "--------------------------------------------"
 
-    variables_location="/home/$user_name/.bashrc.d/server-variables"
-    system_paths=("SRV_LOCATION" "STORAGE_LOCATION")
+    system_paths=("SRV_LOCATION" "STORAGE_LOCATION" "CONFIGURATION_LOCATION")
     default_srv_location="/srv/$user_name"
     default_storage_location="/storage/$user_name"
-    srv_message="SRV_LOCATION is not set. The default srv location is:\n
-$default_srv_location\n
-${RED}Note that if you set a custom srv location the directory${ENDCOLOR}\n
-${RED}specified should already exist${ENDCOLOR}"
-    storage_message="STORAGE_LOCATION is not set. The default storage location is:\n
-$default_storage_location\n
-${RED}Note that the default storage location will install on the${ENDCOLOR}\n
-${RED}root of the OS drive. If you have a second hard drive you${ENDCOLOR}\n
-${RED}would like to use for storage make sure it is mounted and${ENDCOLOR}\n
-${RED}enter the absolute path to the folder. Example:${ENDCOLOR}\n
-/mnt/Second-Drive/$user_name"
+    default_configuration_location="/home/$user_name"
 
     bashrc_code="# User specific aliases and functions
 if [ -d ~/.bashrc.d ]; then
@@ -509,14 +515,35 @@ export -f server-info"
         isConfigured=false
         # Try to partition the statements so that the user can read the text for a
         # given server variable.
-        if [[ $location != "" ]] ; then
+        if [[ $location != "" ]]; then
             isConfigured=true
-        elif [[ ${system_paths[index]} == "SRV_LOCATION" ]] ; then
-            echo -e $srv_message
+        elif [[ ${system_paths[index]} == "SRV_LOCATION" ]]; then
+            echo -e "SRV_LOCATION is not set. The default srv location is:\n"
+            echo -e "$default_srv_location"
+            echo -e "${RED}Note that if you set a custom srv location the directory${ENDCOLOR}"
+            echo -e "${RED}specified should already exist${ENDCOLOR}"
             location=$default_srv_location
-        elif [[ ${system_paths[index]} == "STORAGE_LOCATION" ]] ; then
-            echo -e $storage_message
+        elif [[ ${system_paths[index]} == "STORAGE_LOCATION" ]]; then
+            echo -e "STORAGE_LOCATION is not set. The default storage location is:"
+            echo -e "$default_storage_location"
+            echo -e "${RED}Note that the default storage location will install on the${ENDCOLOR}"
+            echo -e "${RED}root of the OS drive. If you have a second hard drive you${ENDCOLOR}"
+            echo -e "${RED}would like to use for storage make sure it is mounted and${ENDCOLOR}"
+            echo -e "${RED}enter the absolute path to the folder. Example:${ENDCOLOR}"
+            echo -e "/mnt/Second-Drive/$user_name"
             location=$default_storage_location
+        elif [[ ${system_paths[index]} == "CONFIGURATION_LOCATION" ]]; then
+            echo -e "CONFIGURATION_LOCATION is not set. The default configuration location is:"
+            echo -e "$default_configuration_location"
+            echo -e "${RED}Note that the default configuration location is your home${ENDCOLOR}"
+            echo -e "${RED}folder. Individual application configurations are saved to:${ENDCOLOR}"
+            echo -e "${RED}$default_configuration_location/containers/.${ENDCOLOR}"
+            echo -e "${RED}Keeping the configuration location in the home folder is${ENDCOLOR}"
+            echo -e "${RED}really just for convenience.${ENDCOLOR}"
+            echo -e "${RED}In the home folder you will have easy access to the Makefile${ENDCOLOR}"
+            echo -e "${RED}and you can get to work executing commands without changing${ENDCOLOR}"
+            echo -e "${RED}directories after logging in, however the choice is yours.${ENDCOLOR}"
+            location=$default_configuration_location
         fi
 
         variable_config_message=""
@@ -779,26 +806,30 @@ step_7_comment="--------------------------------------------
 step_7() {
     echo "$step_7_comment"
     echo "--------------------------------------------"
-    makefileLocation="/home/$user_name/Makefile"
+    config_location=($(sed -n 's;^export '"CONFIGURATION_LOCATION"'=\(.*\).*;\1;p' $variables_location))
+    if [[ "$config_location" != "" ]] && [ -d $config_location ]; then
+        makefile_location="$config_location/Makefile"
 
-    echo "Making containers directory at:"
-    echo "/home/$user_name/containers"
-    sudo -u "$user_name" mkdir -p -- "/home/$user_name/containers"
-    if [ -f "$makefileLocation" ]; then
-        echo "Notice: $makefileLocation file exists"
-        echo "======"
-        echo "Because this file exists, assume it should not be modified or"
-        echo "changed. This is done to preserve user settings."
-        echo "======"
-    else
-        echo "HINT: you should download this file if you don't have it."
-        read -r -p "Download master Makefile? y/n: " isDownload
-        if [[ "$isDownload" =~ ^[Yy]$ ]]; then
-            curl -o "$makefileLocation" https://raw.githubusercontent.com/c-4422/app-configs/main/Makefile
+        echo "Making containers directory at:"
+        echo "$config_location/containers"
+        sudo -u "$user_name" mkdir -p -- "$config_location/containers"
+        echo "Downloading cpass alias for podman password management"
+        curl https://raw.githubusercontent.com/c-4422/app-configs/main/server-passwd.sh > "/home/$user_name/.bashrc.d/server-passwd"
+        if [ -f "$makefile_location" ]; then
+            echo "Notice: $makefile_location file exists"
+            echo "======"
+            echo "Because this file exists, assume it should not be modified or"
+            echo "changed. This is done to preserve user settings."
+            echo "======"
+        else
+            curl -o "$makefile_location" https://raw.githubusercontent.com/c-4422/app-configs/main/Makefile
         fi
+        echo -en "${GREEN}Completed step 7\n${ENDCOLOR}"
+    else
+        echo -e "${RED}ERROR: CONFIGURATION_LOCATION DOES NOT HAVE A VALID LOCATION${ENDCOLOR}"
+        echo -e "${RED}       MUST CONFIGURE CONFIGURATION_LOCATION BEFORE PROCEEDING${ENDCOLOR}"
+        echo -en "${RED}Skipping step 7\n${ENDCOLOR}"
     fi
-
-    echo -en "${GREEN}Completed step 7\n${ENDCOLOR}"
 }
 
 ########################################
