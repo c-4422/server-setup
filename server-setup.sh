@@ -226,7 +226,11 @@ apt_install() {
     distrobution=$(lsb_release -is)
     if [[ "$distrobution" == "Debian" ]]; then
         code_name=$(lsb_release -cs)
-        echo "deb http://deb.debian.org/debian $code_name-backports main" | sudo tee "/etc/apt/sources.list.d/backports.list"
+        backport_string="deb http://deb.debian.org/debian $code_name-backports main"
+        backport_location="/etc/apt/sources.list.d/backports.list"
+        if [ -f "$backport_location" ] && ! grep "$backport_string" -q "$backport_location"; then
+            echo "$backport_string" | sudo tee "$backport_location"
+        fi
         sudo apt update
         sudo apt install -t $code_name-backports cockpit cockpit-storaged cockpit-podman -y
     else
