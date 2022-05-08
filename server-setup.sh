@@ -522,7 +522,7 @@ export -f server-info"
         if [[ $location != "" ]]; then
             isConfigured=true
         elif [[ ${system_paths[index]} == "SRV_LOCATION" ]]; then
-            echo -e "SRV_LOCATION is not set. The default srv location is:\n"
+            echo -e "SRV_LOCATION is not set. The default srv location is:"
             echo -e "$default_srv_location"
             echo -e "${RED}Note that if you set a custom srv location the directory${ENDCOLOR}"
             echo -e "${RED}specified should already exist${ENDCOLOR}"
@@ -818,7 +818,7 @@ step_7() {
         echo "$config_location/containers"
         sudo -u "$user_name" mkdir -p -- "$config_location/containers"
         echo "Downloading cpass alias for podman password management"
-        curl https://raw.githubusercontent.com/c-4422/app-configs/main/server-passwd.sh > "/home/$user_name/.bashrc.d/server-passwd"
+        curl https://raw.githubusercontent.com/c-4422/server-setup/main/server-passwd.sh > "/home/$user_name/.bashrc.d/server-passwd"
         if [ -f "$makefile_location" ]; then
             echo "Notice: $makefile_location file exists"
             echo "======"
