@@ -183,6 +183,9 @@ select_user() {
     echo "will be running your podman applications on:"
     echo "--------------------------------------------"
     read -r -p "Username: " user_name
+    # Set the server alias and location variables now that the username has been entered
+    alias_location="/home/$user_name/.bashrc.d/server-aliases"
+    variables_location="/home/$user_name/.bashrc.d/server-variables"
     if id -u "$user_name" >/dev/null 2>&1; then
         echo "The user $user_name will be configured"
         read -r -p "for rootless podman. Is this correct? y/n: " isContinue
@@ -207,9 +210,6 @@ select_user() {
             exit 1
         fi
     fi
-
-    # Set the alias location now that the username has been entered
-    alias_location="/home/$user_name/.bashrc.d/server-aliases"
 }
 
 ########################################
