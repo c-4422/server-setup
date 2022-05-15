@@ -46,31 +46,6 @@ RED="\\033[0;31m"
 GREEN="\\033[0;32m"
 ENDCOLOR="\\x1b[0m"
 
-autoUpdateBackupScript="#!/bin/bash
-################################################
-# v1.0.1
-# Automatic application update and backup Script
-# Auto-generated from server-setup.sh script
-# by C-4422
-#
-# This script by default is called on the first
-# Wednesday of every month by SystemD
-#
-# Call all scripts found in the 
-# .server/applications directory and then call 
-# podman auto-update
-################################################
-set -eo pipefail
-count=0
-if [ \"\$(ls -A ~/.server/applications)\" ]; then
-    for f in ~/.server/applications/*.sh; do
-        let \"count+=1\"
-        echo \"Step \$count. Entering script \$f\"
-        bash \"\$f\"
-    done
-fi
-podman auto-update"
-
 lsper_command="-rw-r--r-- 12 linuxize users 12.0K Apr  28 10:10 file_name
 |[-][-][-]-   [------] [---]
 | |  |  | |      |       |
@@ -737,21 +712,8 @@ step_6() {
     sudo -u "$user_name" mkdir -p -- "/home/$user_name/.server/applications"
     sudo -u "$user_name" mkdir -p -- "/home/$user_name/.server/incremental"
 
-    backup_script_location="/home/$user_name/.server/service/update-backup-main.sh"
-    update_service_location="/home/$user_name/.config/systemd/user/container-update.service"
-    update_timer_location="/home/$user_name/.config/systemd/user/container-update.timer"
-    if [ -f "$backup_script_location" ]; then
-        echo "Notice: $backup_script_location file exists"
-        echo "======"
-        echo "Because this file exists, assume it should not be modified or"
-        echo "changed. This is done to preserve user settings."
-        echo "======"
-    else
-        echo "Create update-backup-main.sh to run backup scripts"
-        sudo -u "$user_name" echo "$autoUpdateBackupScript" >> "$backup_script_location"
-        sudo chmod +x "$backup_script_location"
-        sudo chown $user_name:$user_name $backup_script_location
-    fi
+    update_service_location="/home/$user_name/.config/systemd/user/server-podman-auto-update.service"
+    update_timer_location="/home/$user_name/.config/systemd/user/server-podman-auto-update.timer"
 
     if [ -f "$update_service_location" ]; then
         echo "Notice: $update_service_location file exists"
@@ -761,17 +723,19 @@ step_6() {
         echo "======"
     else
         serviceD="[Unit]
-Description=Auto backup and update Podman containers
-After=network.target
+Description=Run podman auto-update command after running podman-app-backup.target
+Wants=podman-app-backup.target
+After=podman-app-backup.target
+PartOf=podman-update.target
 
 [Service]
-WorkingDirectory=/home/$user_name/.server/service/
 Type=oneshot
-ExecStart=/bin/bash $backup_script_location
+WorkingDirectory=/home/$user_name/.server/service/
+ExecStart=/usr/bin/podman auto-update
 
 [Install]
-WantedBy=multi-user.target"
-        echo "Create container-update.service for systemD"
+WantedBy=podman-update.target"
+        echo "Create server-podman-auto-update.service for systemD"
         sudo -u "$user_name" echo "$serviceD" >> "$update_service_location"
     fi
 
@@ -783,14 +747,14 @@ WantedBy=multi-user.target"
         echo "======"
     else
         timerD="[Unit]
-Description=Timer for podman auto backup and update
+Description=Timer for podman auto-update command.
 
 [Timer]
 OnCalendar=Wed *-*-1..7 2:00:00
 
 [Install]
-WantedBy=multi-user.target"
-        echo "Create container-update.timer for systemD"
+WantedBy=podman-update.target"
+        echo "Create server-podman-auto-update.timer for systemD"
         sudo -u "$user_name" echo "$timerD" >> "$update_timer_location"
     fi
     echo -en "${GREEN}Completed step 6\n${ENDCOLOR}"
