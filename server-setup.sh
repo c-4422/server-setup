@@ -196,7 +196,7 @@ apt_install() {
     sudo apt update
     sudo apt upgrade -y
     sudo apt install -y make crun podman fail2ban dialog gpg sed nano firewalld unattended-upgrades apt-listchanges curl lsb-release \
-    btrfs-progs libbtrfs-dev runc uidmap
+    btrfs-progs libbtrfs-dev runc uidmap openssh-server
     
     distrobution=$(lsb_release -is)
     if [[ "$distrobution" == "Debian" ]]; then

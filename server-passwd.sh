@@ -51,8 +51,8 @@ cpass () {
                 read -r -p "Set new password for $password_name? y/N: " is_new_password
             fi
             while [[ "$is_new_password" =~ ^[Yy]$ ]]; do
-                read -r -p "Type password: " new_password
-                read -r -p "Retype Password: " confirm_new_password
+                read -r -p "Enter password for $password_name: " new_password
+                read -r -p "Retype Password for $password_name: " confirm_new_password
                 if [[ "$new_password" == "$confirm_new_password" ]]; then
                     is_new_password="n"
                     echo "$new_password" > "$secrets_location/$password_file_name"
