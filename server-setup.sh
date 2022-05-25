@@ -17,12 +17,12 @@
 #   other software intended for ease of use like cockpit.
 # - Set kernel parmaters for rootless and possibly additional 
 #   security
-# - Set up podman to use fuse-fs for rootless containers if 
-#   available
+# - Set up podman to use fuse-fs if available for rootless 
+#   containers
 # - Set up locations for container persistent storage
 # - Set up structure for backups
 # - Possibly set up pass password manager for management of
-#   contianer passwords
+#   contianer passwords through adapter alias cpass
 # - Possibly add an alias lsper which lists la -al permission
 #   property columns
 #
@@ -192,10 +192,12 @@ select_user() {
 #   Install and configure for apt
 ########################################
 apt_install() {
+    backport_packages="cockpit cockpit-storaged cockpit-podman podman"
+
     sudo usermod -aG sudo "$user_name"
     sudo apt update
     sudo apt upgrade -y
-    sudo apt install -y make crun podman fail2ban dialog gpg sed nano firewalld unattended-upgrades apt-listchanges curl lsb-release \
+    sudo apt install -y make crun fail2ban dialog gpg sed nano firewalld unattended-upgrades apt-listchanges curl lsb-release \
     btrfs-progs libbtrfs-dev runc uidmap openssh-server
     
     distrobution=$(lsb_release -is)
@@ -207,9 +209,9 @@ apt_install() {
             echo "$backport_string" | sudo tee "$backport_location"
         fi
         sudo apt update
-        sudo apt install -t $code_name-backports cockpit cockpit-storaged cockpit-podman -y
+        sudo apt install -t $code_name-backports "$backport_packages" -y
     else
-        sudo apt install -y cockpit cockpit-storaged cockpit-podman
+        sudo apt install -y "$backport_packages"
     fi
     
     read -r -p "Install pass password manager? Y/n: " is_pass_password
