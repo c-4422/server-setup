@@ -541,7 +541,8 @@ export -f server-info"
         while [[ ! "$action" =~ ^[Yy]$ ]]; do
             if [[ $location != "" ]] ; then
 	            read -r -p "Variable location correct? y/n: " action
-            elif [[ $location != "" || "$action" =~ ^[Nn]$ ]] ; then
+            fi
+            if [[ $location != "" || "$action" =~ ^[Nn]$ ]] ; then
                 read -r -p "Set ${system_paths[index]} location: " location
             fi
             if [[ "$action" == "" || "$action" =~ ^[Yy]$ ]] ; then
