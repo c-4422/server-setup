@@ -192,6 +192,7 @@ select_user() {
 #   Install and configure for apt
 ########################################
 apt_install() {
+    local install_pass=$1
     backport_packages="cockpit cockpit-storaged cockpit-podman podman"
 
     sudo usermod -aG sudo "$user_name"
@@ -214,11 +215,8 @@ apt_install() {
         sudo apt install -y $backport_packages
     fi
     
-    read -r -p "Install pass password manager? Y/n: " is_pass_password
-    if [[ ! "$is_pass_password" =~ ^[Nn]$ ]]; then
-        if ! sudo apt install -y pass; then
-            echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
-        fi
+    if [install_pass] && ! sudo apt install -y pass; then
+        echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
     fi
 }
 
@@ -227,15 +225,14 @@ apt_install() {
 #   Install and configure for dnf
 ########################################
 dnf_install() {
+    local install_pass=$1
     sudo usermod -aG wheel "$user_name"
     sudo dnf install epel-release -y
     sudo dnf update -y
     sudo dnf install make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano firewalld curl redhat-lsb-core -y
     read -r -p "Install pass password manager? Y/n: " is_pass_password
-    if [[ ! "$is_pass_password" =~ ^[Nn]$ ]]; then
-        if ! sudo dnf install pass -y; then
-            echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
-        fi
+    if [install_pass] && ! sudo dnf install pass -y; then
+        echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
     fi
 }
 
@@ -252,10 +249,17 @@ step_1_comment="--------------------------------------------
 step_1() {
     echo "$step_1_comment"
     echo "--------------------------------------------"
+    install_pass=0
+    if ! [ -x "$(command -v pass)" ]; then
+        read -r -p "Install pass password manager? Y/n: " is_pass_password
+        if [[ ! "$is_pass_password" =~ ^[Nn]$ ]]; then
+            install_pass=1
+        fi
+    fi
     if [ -x "$(command -v dnf)" ]; then
-        dnf_install
+        dnf_install install_pass
     elif [ -x "$(command -v apt)" ]; then
-        apt_install
+        apt_install install_pass
     fi
     echo "Enable cockpit service"
     sudo firewall-cmd --add-service="cockpit" --permanent
@@ -542,7 +546,7 @@ export -f server-info"
             if [[ $location != "" ]] ; then
 	            read -r -p "Variable location correct? y/n: " action
             fi
-            if [[ $location != "" || "$action" =~ ^[Nn]$ ]] ; then
+            if [[ $location == "" || "$action" =~ ^[Nn]$ ]] ; then
                 read -r -p "Set ${system_paths[index]} location: " location
             fi
             if [[ "$action" == "" || "$action" =~ ^[Yy]$ ]] ; then
@@ -840,34 +844,12 @@ step_8() {
     fi
 }
 
-###################################################################
-# SCRIPT MAIN BODY
-###################################################################
-
-set -eo pipefail
-
-echo "--------------------------------------------"
-echo "Server setup script v$version by C-4422"
-echo "============================================"
-
-print_logo
-select_user
-
-echo "============================================================"
-echo "The following steps are available"
-echo "============================================================"
-echo "$step_1_comment"
-echo "$step_2_comment"
-echo "$step_3_comment"
-echo "$step_4_comment"
-echo "$step_5_comment"
-echo "$step_6_comment"
-echo "$step_7_comment"
-echo "$step_8_comment"
-echo "--------------------------------------------"
-read -r -p "Select the step you wish to execute (1-8, Default All=A): " stepSelect
-
-case "$stepSelect" in
+########################################
+# FUNCTION
+#   directory()
+########################################
+directory() {
+    case "$stepSelect" in
     "1")
         step_1
         ;;
@@ -893,17 +875,54 @@ case "$stepSelect" in
         step_8
         ;;
     *)
-        # Default
-        step_1
-        step_2
-        step_3
-        step_4
-        step_5
-        step_6
-        step_7
-        step_8
+        # Default break
         ;;
-esac
+    esac
+}
+
+###################################################################
+# SCRIPT MAIN BODY
+###################################################################
+
+set -eo pipefail
+
+echo "--------------------------------------------"
+echo "Server setup script v$version by C-4422"
+echo "============================================"
+
+print_logo
+select_user
+
+echo "============================================================"
+echo "The following steps are available"
+echo "============================================================"
+echo "$step_1_comment"
+echo "$step_2_comment"
+echo "$step_3_comment"
+echo "$step_4_comment"
+echo "$step_5_comment"
+echo "$step_6_comment"
+echo "$step_7_comment"
+echo "$step_8_comment"
+echo "--------------------------------------------"
+read -r -p "Select the step you wish to execute (1-8, Default All=A): " step_select
+
+is_continue="u"
+step=1
+if [[ "$step_select" == "" || "$step_select" =~ ^[Aa]$ ]]; then
+    is_continue="y"
+fi
+
+while [[! "$is_continue" =~ ^[Nn]$] && $step -lt 9 ] ; do
+    directory step
+    if [[ "$is_continue" =~ ^[Uu]$ && $step -lt 8 ]]; then
+        read -r -p "Continue script? [y/N]: " is_continue
+        if [[ ! "$is_continue" =~ ^[Yy]$ ]]; then
+            is_continue="n"
+        fi
+    fi
+    step=$((step+1))
+done
 
 echo -en "${GREEN}Setup completed succesfully!\n${ENDCOLOR}"
 read -r -p "Reboot required. Reboot now? y/n: " isReboot
