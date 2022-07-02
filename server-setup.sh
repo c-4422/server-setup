@@ -195,6 +195,10 @@ apt_install() {
     local install_pass=$1
     backport_packages="cockpit cockpit-storaged cockpit-podman podman"
 
+    if ! [ -x "$(command -v sudo)" ]; then
+    echo "Install sudo as root user"
+    apt install sudo
+    fi
     sudo usermod -aG sudo "$user_name"
     sudo apt update
     sudo apt upgrade -y
@@ -215,7 +219,7 @@ apt_install() {
         sudo apt install -y $backport_packages
     fi
     
-    if [install_pass] && ! sudo apt install -y pass; then
+    if [ $install_pass -eq 1 ] && ! sudo apt install -y pass; then
         echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
     fi
 }
@@ -225,13 +229,12 @@ apt_install() {
 #   Install and configure for dnf
 ########################################
 dnf_install() {
-    local install_pass=$1
+    local install_pass=$(($1))
     sudo usermod -aG wheel "$user_name"
     sudo dnf install epel-release -y
     sudo dnf update -y
     sudo dnf install make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano firewalld curl redhat-lsb-core -y
-    read -r -p "Install pass password manager? Y/n: " is_pass_password
-    if [install_pass] && ! sudo dnf install pass -y; then
+    if [ $install_pass -eq 1 ] && ! sudo dnf install pass -y; then
         echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
     fi
 }
@@ -253,6 +256,7 @@ step_1() {
     if ! [ -x "$(command -v pass)" ]; then
         read -r -p "Install pass password manager? Y/n: " is_pass_password
         if [[ ! "$is_pass_password" =~ ^[Nn]$ ]]; then
+            echo "Setting install_pass = 1"
             install_pass=1
         fi
     fi
@@ -849,29 +853,30 @@ step_8() {
 #   directory()
 ########################################
 directory() {
-    case "$stepSelect" in
-    "1")
+    local step=$1
+    case $step in
+    1)
         step_1
         ;;
-    "2")
+    2)
         step_2
         ;;
-    "3")
+    3)
         step_3
         ;;
-    "4")
+    4)
         step_4
         ;;
-    "5")
+    5)
         step_5
         ;;
-    "6")
+    6)
         step_6
         ;;
-    "7")
+    7)
         step_7
         ;;
-    "8")
+    8)
         step_8
         ;;
     *)
@@ -905,16 +910,23 @@ echo "$step_6_comment"
 echo "$step_7_comment"
 echo "$step_8_comment"
 echo "--------------------------------------------"
+declare -i step=1
 read -r -p "Select the step you wish to execute (1-8, Default All=A): " step_select
 
 is_continue="u"
-step=1
 if [[ "$step_select" == "" || "$step_select" =~ ^[Aa]$ ]]; then
     is_continue="y"
+else
+    # Convert input to integer and check if it's valid
+    step=$(($step_select))
+    if [ $step -lt 1 || $step -gt 8 ]; then
+        echo -e "${RED}ERROR: Invalid step selected!${ENDCOLOR}"
+        exit 1
+    fi
 fi
 
-while [[! "$is_continue" =~ ^[Nn]$] && $step -lt 9 ] ; do
-    directory step
+while [[ ! "$is_continue" =~ ^[Nn]$ ]] && [ $step -lt 9 ]; do
+    directory $step
     if [[ "$is_continue" =~ ^[Uu]$ && $step -lt 8 ]]; then
         read -r -p "Continue script? [y/N]: " is_continue
         if [[ ! "$is_continue" =~ ^[Yy]$ ]]; then
