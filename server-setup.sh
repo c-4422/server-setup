@@ -203,7 +203,7 @@ apt_install() {
     sudo apt update
     sudo apt upgrade -y
     sudo apt install -y make crun fail2ban dialog gpg sed nano firewalld unattended-upgrades apt-listchanges curl lsb-release \
-    btrfs-progs libbtrfs-dev runc uidmap openssh-server
+    btrfs-progs libbtrfs-dev runc uidmap openssh-server rsync
     
     distrobution=$(lsb_release -is)
     if [[ "$distrobution" == "Debian" ]]; then
@@ -233,7 +233,8 @@ dnf_install() {
     sudo usermod -aG wheel "$user_name"
     sudo dnf install epel-release -y
     sudo dnf update -y
-    sudo dnf install make crun podman cockpit cockpit-storaged cockpit-podman fail2ban dialog gpg sed nano firewalld curl redhat-lsb-core -y
+    sudo dnf install make crun podman cockpit cockpit-storaged cockpit-podman \
+    fail2ban dialog gpg sed nano firewalld curl redhat-lsb-core rsync -y
     if [ $install_pass -eq 1 ] && ! sudo dnf install pass -y; then
         echo -en "${RED}NOTICE: Pass cannot be installed\n${ENDCOLOR}"
     fi
@@ -671,9 +672,7 @@ step_5() {
             echo -en "${RED}\nSkipping Step 5\n\n${ENDCOLOR}"
         else
             echo "Configure pass? A basic password manager used"
-            echo "to load in passwords for podman applications"
-            echo "C-4422 has configured. If you have already"
-            echo "configured pass or you do not want to use it"
+            echo "to load in passwords for podman applications."
             read -r -p "Configure Pass? y/n: " isPass
             if [[ "$isPass" =~ ^[Yy]$ ]]; then
                 gpgKey=$(gpg --list-secret-keys --keyid-format LONG)
