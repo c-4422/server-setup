@@ -192,7 +192,7 @@ select_user() {
 #   Install and configure for apt
 ########################################
 apt_install() {
-    local install_pass=$1
+    local install_pass=$(($1))
     backport_packages="cockpit cockpit-storaged cockpit-podman podman"
 
     if ! [ -x "$(command -v sudo)" ]; then
@@ -203,7 +203,7 @@ apt_install() {
     sudo apt update
     sudo apt upgrade -y
     sudo apt install -y make crun fail2ban dialog gpg sed nano firewalld unattended-upgrades apt-listchanges curl lsb-release \
-    btrfs-progs libbtrfs-dev runc uidmap openssh-server rsync
+    btrfs-progs libbtrfs-dev runc uidmap openssh-server rsync apt-config-auto-update
     
     distrobution=$(lsb_release -is)
     if [[ "$distrobution" == "Debian" ]]; then
@@ -256,7 +256,7 @@ step_1() {
     install_pass=0
     if ! [ -x "$(command -v pass)" ]; then
         read -r -p "Install pass password manager? Y/n: " is_pass_password
-        if [[ ! "$is_pass_password" =~ ^[Nn]$ ]]; then
+        if [[ "$is_pass_password" =~ ^[Yy]$ ]]; then
             echo "Setting install_pass = 1"
             install_pass=1
         fi
